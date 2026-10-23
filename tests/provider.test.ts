@@ -45,6 +45,17 @@ describe('optional structured AI personalization', () => {
     expect(body.store).toBe(false);
     expect(body.max_output_tokens).toBe(1_400);
     expect(body.text).toEqual(expect.objectContaining({format: expect.objectContaining({type: 'json_schema', strict: true})}));
+    expect(body.text).toEqual(expect.objectContaining({format: expect.objectContaining({schema: expect.objectContaining({
+      properties: expect.objectContaining({
+        summary: {type: 'string', pattern: '^[\\s\\S]{1,1400}$'},
+        ideas: expect.objectContaining({minItems: 3, maxItems: 6,
+          items: expect.objectContaining({properties: {
+            title: {type: 'string', pattern: '^[\\s\\S]{1,120}$'},
+            description: {type: 'string', pattern: '^[\\s\\S]{1,600}$'},
+          }}),
+        }),
+      }),
+    })})}));
     expect(String(body.instructions)).toContain('untrusted data');
     expect(JSON.parse(String(body.input)).event.dietary).toBe('Vegan');
   });

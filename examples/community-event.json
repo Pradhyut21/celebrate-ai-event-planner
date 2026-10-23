@@ -1,0 +1,14 @@
+{
+  "name": "Neighbourhood skill-share day",
+  "type": "community",
+  "date": "2030-06-20",
+  "currency": "INR",
+  "budget": 120000,
+  "guests": 120,
+  "location": "Community hall and garden",
+  "vibe": "Welcoming, relaxed and low waste",
+  "priorities": ["Accessibility", "Food", "Volunteers"],
+  "accessibility": "Step-free routes, accessible toilets and a quiet space",
+  "dietary": "Vegetarian options with clear ingredient labels",
+  "notes": "Invite residents to lead optional short skill shares. Confirm an indoor weather backup."
+}

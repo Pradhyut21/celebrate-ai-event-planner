@@ -20,9 +20,11 @@ const ResponseEnvelopeSchema = z.object({
 const outputSchema = {
   type: 'object', additionalProperties: false,
   properties: {
-    summary: {type: 'string'},
-    ideas: {type: 'array', items: {type: 'object', additionalProperties: false,
-      properties: {title: {type: 'string'}, description: {type: 'string'}},
+    // Bounded patterns use the documented Structured Outputs string subset.
+    summary: {type: 'string', pattern: '^[\\s\\S]{1,1400}$'},
+    ideas: {type: 'array', minItems: 3, maxItems: 6, items: {type: 'object', additionalProperties: false,
+      properties: {title: {type: 'string', pattern: '^[\\s\\S]{1,120}$'},
+        description: {type: 'string', pattern: '^[\\s\\S]{1,600}$'}},
       required: ['title', 'description']}},
   },
   required: ['summary', 'ideas'],
