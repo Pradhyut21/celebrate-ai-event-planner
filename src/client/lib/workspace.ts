@@ -115,7 +115,7 @@ export function workspaceReducer(state: Workspace, action: WorkspaceAction): Wor
         return {
           ...state,
           events,
-          selectedId: action.events[0].id,
+          selectedId: action.events[0]?.id ?? state.selectedId,
           corruptStorageProtected: false,
           notice: {
             text: `Imported ${action.events.length} events. Matching event identifiers were updated.`,

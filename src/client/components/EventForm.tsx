@@ -2,8 +2,18 @@ import React, { useState } from 'react';
 import { LoaderCircle, Sparkles } from 'lucide-react';
 import type { EventInput, StoredEvent } from '../../shared/schema.js';
 import { eventInputSchema } from '../../shared/schema.js';
-import { futureDate, localDate } from '../lib/format.js';
+import { utcToday } from '../../shared/planner.js';
+import { futureDate } from '../lib/format.js';
 import { Dialog } from './Dialog.js';
+
+const PRIORITY_OPTIONS = [
+  'Food & drinks',
+  'Venue',
+  'Photography',
+  'Decor & flowers',
+  'Entertainment',
+  'Guest experience',
+];
 
 const blankInput = (): EventInput => ({
   name: '',
@@ -23,16 +33,20 @@ const blankInput = (): EventInput => ({
 export function EventForm({
   event,
   busy,
+  submissionError,
   onSubmit,
   onClose,
 }: {
   event?: StoredEvent;
   busy: boolean;
+  submissionError?: string;
   onSubmit: (input: EventInput) => void;
   onClose: () => void;
 }): React.ReactElement {
   const [input, setInput] = useState<EventInput>(event?.input ?? blankInput());
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const priorityOptions = [...new Set([...PRIORITY_OPTIONS, ...(event?.input.priorities ?? [])])];
+  const maxPriorities = Math.max(3, event?.input.priorities.length ?? 0);
   const change = <K extends keyof EventInput>(key: K, value: EventInput[K]) => {
     setInput((previous) => ({ ...previous, [key]: value }));
     setErrors((previous) => ({ ...previous, [key]: '' }));
@@ -47,6 +61,18 @@ export function EventForm({
         {errors[key]}
       </span>
     ) : null;
+  const reject = (
+    next: Record<string, string>,
+    firstInvalidField: string,
+    form: HTMLFormElement,
+  ) => {
+    setErrors(next);
+    // Wait for error descriptions to render before moving keyboard focus.
+    window.requestAnimationFrame(() => {
+      const control = form.elements.namedItem(firstInvalidField);
+      if (control instanceof HTMLElement && control.isConnected) control.focus();
+    });
+  };
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const result = eventInputSchema.safeParse(input);
@@ -55,14 +81,11 @@ export function EventForm({
       result.error.issues.forEach((issue) => {
         next[String(issue.path[0])] = issue.message;
       });
-      setErrors(next);
-      const form = event.currentTarget;
-      const firstInvalidField = String(result.error.issues[0]?.path[0] ?? '');
-      // Wait for error descriptions to render before moving keyboard focus.
-      window.requestAnimationFrame(() => {
-        const control = form.elements.namedItem(firstInvalidField);
-        if (control instanceof HTMLElement && control.isConnected) control.focus();
-      });
+      reject(next, String(result.error.issues[0]?.path[0] ?? ''), event.currentTarget);
+      return;
+    }
+    if (result.data.date < utcToday()) {
+      reject({ date: 'Choose today or a future date using UTC.' }, 'date', event.currentTarget);
       return;
     }
     onSubmit(result.data);
@@ -76,6 +99,11 @@ export function EventForm({
         <p className="callout">
           Generating again refreshes this event’s budget, tasks, and vendor details. Export a backup
           first if you want to keep your current plan.
+        </p>
+      )}
+      {submissionError && (
+        <p role="alert" className="callout warning">
+          {submissionError}
         </p>
       )}
       <form
@@ -128,12 +156,16 @@ export function EventForm({
                 type="date"
                 name="date"
                 required
-                min={localDate()}
+                min={utcToday()}
                 value={input.date}
                 onChange={(event) => change('date', event.target.value)}
                 {...field('date')}
+                aria-describedby={errors.date ? 'error-date date-hint' : 'date-hint'}
               />
               {error('date')}
+              <span id="date-hint" className="field-hint">
+                Today or later, using UTC to match the planning service.
+              </span>
             </label>
             <label className="span-two">
               Location <span aria-hidden="true">*</span>
@@ -207,17 +239,10 @@ export function EventForm({
             </label>
             <fieldset className="priority-fieldset span-two">
               <legend>
-                What matters most? <span className="muted">Choose up to 3</span>
+                What matters most? <span className="muted">Choose up to {maxPriorities}</span>
               </legend>
               <div className="priority-options">
-                {[
-                  'Food & drinks',
-                  'Venue',
-                  'Photography',
-                  'Decor & flowers',
-                  'Entertainment',
-                  'Guest experience',
-                ].map((priority) => (
+                {priorityOptions.map((priority) => (
                   <label
                     className={`choice-chip ${input.priorities.includes(priority) ? 'selected' : ''}`}
                     key={priority}
@@ -226,16 +251,19 @@ export function EventForm({
                       type="checkbox"
                       checked={input.priorities.includes(priority)}
                       disabled={
-                        !input.priorities.includes(priority) && input.priorities.length >= 3
+                        !input.priorities.includes(priority) &&
+                        input.priorities.length >= maxPriorities
                       }
-                      onChange={(event) =>
-                        change(
-                          'priorities',
-                          event.target.checked
-                            ? [...input.priorities, priority]
-                            : input.priorities.filter((item) => item !== priority),
-                        )
-                      }
+                      onChange={(event) => {
+                        const checked = event.target.checked;
+                        setInput((previous) => ({
+                          ...previous,
+                          priorities: checked
+                            ? [...new Set([...previous.priorities, priority])]
+                            : previous.priorities.filter((item) => item !== priority),
+                        }));
+                        setErrors((previous) => ({ ...previous, priorities: '' }));
+                      }}
                     />
                     {priority}
                   </label>

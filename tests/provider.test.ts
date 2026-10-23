@@ -145,6 +145,28 @@ describe('optional structured AI personalization', () => {
     expect((fetchImpl.mock.calls[0]![1]?.signal as AbortSignal).aborted).toBe(true);
   });
 
+  it('cancels a streamed error body and releases its deadline without exposing upstream text', async () => {
+    vi.useFakeTimers();
+    const cancel = vi.fn();
+    const body = new ReadableStream<Uint8Array>({ cancel });
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(new Response(body, { status: 500 }));
+    const result = await enrichPlan(input, plan, { apiKey: 'secret', fetchImpl });
+    expect(result.generatedBy).toBe('rules');
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(fetchImpl.mock.calls[0]?.[1]?.signal?.aborted).toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('keeps error-body cleanup failures inside the safe fallback boundary', async () => {
+    const body = new ReadableStream<Uint8Array>({
+      cancel: () => Promise.reject(new Error('private upstream detail')),
+    });
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(new Response(body, { status: 500 }));
+    const result = await enrichPlan(input, plan, { apiKey: 'secret', fetchImpl });
+    expect(result.generatedBy).toBe('rules');
+    expect(JSON.stringify(result)).not.toContain('private upstream detail');
+  });
+
   it('treats a prompt injection in user notes as data and preserves trusted calculations', async () => {
     const maliciousInput = {
       ...input,

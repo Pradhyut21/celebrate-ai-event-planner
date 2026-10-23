@@ -4,12 +4,12 @@ Verified on **23 October 2026** using Node.js **22.18.0**, npm **10.2.5**, and W
 
 | Check                          | Observed result                                                                                                                                    |
 | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run typecheck`            | Pass; strict TypeScript with unused-code checks                                                                                                    |
+| `npm run typecheck`            | Pass; strict TypeScript with checked indexed access and unused-code checks                                                                         |
 | `npm run lint`                 | Pass; zero warnings, React hooks and JSX accessibility rules included                                                                              |
-| `npm run test:coverage`        | 132 tests passed across eight test files                                                                                                           |
-| Coverage                       | Statements 99.37%; branches 95.84%; functions 99.04%; lines 100%                                                                                   |
+| `npm run test:coverage`        | 157 tests passed across ten test files                                                                                                             |
+| Coverage                       | Statements 99.41%; branches 95.71%; functions 99.19%; lines 100%                                                                                   |
 | `npm run build`                | Pass; Vite browser bundle plus compiled Node server                                                                                                |
-| `npm run test:e2e`             | All ten Chromium browser tests passed                                                                                                              |
+| `npm run test:e2e`             | All fourteen Chromium browser tests passed                                                                                                         |
 | Accessibility scans            | Zero axe WCAG A/AA violations on the tested five planning views at desktop/mobile widths, desktop Create/Settings dialogs and mobile Create dialog |
 | Keyboard/layout                | Skip link, main focus, navigation Escape, dialog focus/return and mobile page overflow checks passed                                               |
 | `npm audit --audit-level=high` | Zero known vulnerabilities reported across installed dependencies                                                                                  |
@@ -22,7 +22,7 @@ Coverage includes shared business logic/templates, all server policy/HTTP/provid
 
 Type-aware lint additionally checks promise handling and type imports, Prettier enforces consistent formatting, and compressed transfer budgets enforce JavaScript below 120,000 bytes and CSS below 10,000 bytes. Browser checks include WCAG 2.2 target size, 320-pixel reflow, invalid-field announcements/focus, mobile route focus and duplicate-submit/busy-state behavior. No runtime dependencies were added in this refactor.
 
-The production browser assets are approximately **116.4 kB JavaScript** and **8.15 kB CSS**, gzip compressed. `docs/preview.png` is a genuine application capture, 170,155 bytes. No dependencies, builds, recordings, coverage output or browser binaries are tracked in Git.
+The production browser assets are approximately **117.0 kB JavaScript** and **8.15 kB CSS**, gzip compressed. `docs/preview.png` is a genuine application capture, 170,155 bytes. No dependencies, builds, recordings, coverage output or browser binaries are tracked in Git.
 
 ## Scenarios verified
 
@@ -34,6 +34,10 @@ The production browser assets are approximately **116.4 kB JavaScript** and **8.
 - Saved actual spend, rebalanced allocations, cent precision, timeline progress, vendor names/quotes/status/checklist completion and selected event across reloads.
 - JSON backup round trip, invalid imports, corrupted storage recovery, spreadsheet formula neutralization and hostile-looking text rendered safely.
 - Transparent browser-local fallback after an invalid API response.
+- Positive sub-cent amounts rejected; CSV balances use exact cent subtraction; vendor checklist progress rejects duplicates and unrelated entries.
+- Consecutive vendor checklist edits preserve each other; imported custom priorities remain visible, keyboard accessible and removable when editing.
+- Daylight-saving countdowns and the UTC form/API date boundary; an event crossing midnight during generation can recover and retry with its error announced inside the dialog.
+- Storage quota failure after import is announced inside Settings while current in-memory planning remains usable.
 
 ## Limits of this verification
 

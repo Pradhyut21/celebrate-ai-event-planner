@@ -1,5 +1,7 @@
 # Threat model
 
+Money validation requires an exact integer-cent round trip, so tiny positive fractions cannot bypass the positive-budget rule and produce a zero-cent plan. Vendor checklist progress is validated as a unique subset of that vendor's checklist. These contracts also apply to imported backups. Failed provider responses cancel their streamed body; the provider controller is aborted and its timer cleared on every settled path.
+
 ## Scope and assets
 
 Celebrate AI is a personal event-planning assistant. It plans weddings, birthdays and community events; it does not process payments, book suppliers, send invitations or maintain a shared account system. Vendor names and quotes are organizer-entered planning notes. Generated category allocations are targets rather than live market quotes.

@@ -1,5 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { serializeBackup, STORAGE_KEY } from '../../src/client/lib/data.js';
+import { savedEvent } from '../fixtures.js';
 
 async function expectAccessible(page: Page, name: string) {
   const result = await new AxeBuilder({ page })
@@ -338,4 +340,111 @@ test('duplicate submissions share one in-flight generation and release the busy 
   await expect(page.getByRole('heading', { name: 'One generation', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'New event', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Generate my plan', exact: true })).toBeEnabled();
+});
+
+test('generation failure is announced inside the active dialog and a corrected date can retry', async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(new Date('2030-01-01T23:59:00Z'));
+  await page.route('**/api/plan', async (route) => {
+    // The brief becomes past-dated while its request is in flight across UTC midnight.
+    await page.clock.setFixedTime(new Date('2030-01-02T00:01:00Z'));
+    await route.fulfill({ status: 503, json: { error: 'Unavailable' } });
+  });
+  await page.getByRole('button', { name: 'New event', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Create an event' });
+  await dialog.getByLabel(/^Event name/).fill('Midnight celebration');
+  await dialog.getByLabel(/^Location/).fill('Community hall');
+  await dialog.getByLabel(/^Event date/).fill('2030-01-01');
+  await dialog.getByRole('button', { name: 'Generate my plan', exact: true }).click();
+  await expect(dialog.getByRole('alert')).toContainText('could not create this plan');
+  await expect(dialog.getByRole('button', { name: 'Generate my plan', exact: true })).toBeEnabled();
+  await expect(dialog.getByLabel(/^Event name/)).toHaveValue('Midnight celebration');
+  await expectAccessible(page, 'generation-failure-dialog');
+  await dialog.getByLabel(/^Event date/).fill('2030-01-03');
+  await dialog.getByRole('button', { name: 'Generate my plan', exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Midnight celebration', exact: true }),
+  ).toBeVisible();
+});
+
+test('an imported custom priority stays visible and removable when editing', async ({ page }) => {
+  const imported = savedEvent('custom-priorities');
+  imported.input.priorities = ['Local artists', 'Food & drinks', 'Venue', 'Photography'];
+  await page.evaluate(({ key, backup }) => localStorage.setItem(key, backup), {
+    key: STORAGE_KEY,
+    backup: serializeBackup([imported]),
+  });
+  await page.reload();
+  await page.getByRole('button', { name: 'Edit event', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Edit your event' });
+  const customPriority = dialog.getByRole('checkbox', { name: 'Local artists', exact: true });
+  await expect(customPriority).toBeChecked();
+  await expect(customPriority).toBeEnabled();
+  await customPriority.uncheck();
+  await expect(customPriority).toBeVisible();
+  await expect(customPriority).not.toBeChecked();
+  await expect(customPriority).toBeEnabled();
+  await customPriority.check();
+  await expect(customPriority).toBeChecked();
+  await customPriority.uncheck();
+  await dialog.getByRole('button', { name: 'Generate my plan', exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  const priorities = await page.evaluate((key) => {
+    const backup = JSON.parse(localStorage.getItem(key) ?? '{}') as {
+      events: { input: { priorities: string[] } }[];
+    };
+    return backup.events[0]?.input.priorities;
+  }, STORAGE_KEY);
+  expect(priorities).toEqual(['Food & drinks', 'Venue', 'Photography']);
+});
+
+test('storage failures are announced inside Settings after an import', async ({ page }) => {
+  await page.getByRole('button', { name: 'Open settings', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Settings & backups' });
+  await page.evaluate(() => {
+    Storage.prototype.setItem = () => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError');
+    };
+  });
+  await dialog.getByLabel('Import events (JSON)', { exact: true }).setInputFiles({
+    name: 'events.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(serializeBackup([savedEvent('imported')])),
+  });
+  await expect(dialog.getByRole('alert')).toContainText('could not save changes');
+  await expectAccessible(page, 'storage-failure-settings');
+});
+
+test.describe('planning calendar in an American timezone', () => {
+  test.use({ timezoneId: 'America/Los_Angeles' });
+
+  test('uses the same UTC date boundary as the API and local planning engine', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2030-01-02T01:00:00Z'));
+    let requests = 0;
+    page.on('request', (request) => {
+      if (new URL(request.url()).pathname === '/api/plan') requests += 1;
+    });
+    await page.getByRole('button', { name: 'New event', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Create an event' });
+    await dialog.getByLabel(/^Event name/).fill('Calendar boundary');
+    await dialog.getByLabel(/^Location/).fill('Community hall');
+    const date = dialog.getByLabel(/^Event date/);
+    await expect(date).toHaveAttribute('min', '2030-01-02');
+    await date.fill('2030-01-01');
+    // Exercise application validation as well as the native minimum-date constraint.
+    await dialog
+      .locator('form')
+      .evaluate((form) =>
+        form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })),
+      );
+    await expect(date).toBeFocused();
+    await expect(date).toHaveAccessibleDescription(/Choose today or a future date using UTC\./);
+    expect(requests).toBe(0);
+    await date.fill('2030-01-02');
+    await dialog.getByRole('button', { name: 'Generate my plan', exact: true }).click();
+    await expect(dialog).not.toBeVisible();
+    expect(requests).toBe(1);
+  });
 });

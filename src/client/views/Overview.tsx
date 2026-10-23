@@ -17,7 +17,7 @@ import {
 import type { StoredEvent } from '../../shared/schema.js';
 import type { Section } from '../types.js';
 import { formatDate, money, remainingDays } from '../lib/format.js';
-import { sumMoney } from '../lib/data.js';
+import { sumMoney } from '../lib/budget.js';
 import { BotanicalIllustration } from '../components/BotanicalIllustration.js';
 import { StatCard } from '../components/StatCard.js';
 import { TaskRow } from '../components/TaskRow.js';

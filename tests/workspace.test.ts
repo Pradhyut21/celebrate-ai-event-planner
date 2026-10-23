@@ -49,9 +49,9 @@ describe('atomic event edits', () => {
         tasks: plan.tasks.map((task) => ({ ...task, completed: true })),
       }),
     });
-    expect(state.events[0].plan.budget[0].actual).toBe(12.34);
-    expect(state.events[0].plan.tasks.every((task) => task.completed)).toBe(true);
-    expect(state.events[0].updatedAt).toBe('2030-01-03T12:00:00.000Z');
+    expect(state.events[0]!.plan.budget[0]!.actual).toBe(12.34);
+    expect(state.events[0]!.plan.tasks.every((task) => task.completed)).toBe(true);
+    expect(state.events[0]!.updatedAt).toBe('2030-01-03T12:00:00.000Z');
     expect(state.corruptStorageProtected).toBe(false);
   });
 
@@ -102,7 +102,7 @@ describe('atomic event edits', () => {
     edited.input.name = 'Updated name';
     state = workspaceReducer(state, { type: 'save', event: edited, editing: true, notice });
     expect(state.events[0]).toBe(first);
-    expect(state.events[1].input.name).toBe('Updated name');
+    expect(state.events[1]!.input.name).toBe('Updated name');
   });
 
   it('rejects a stale edit, an invalid generated plan and a new event beyond capacity', () => {
@@ -144,7 +144,7 @@ describe('imports and deletion', () => {
     const next = workspaceReducer(state, { type: 'import', events: [imported, savedEvent('new')] });
     expect(next.events).toHaveLength(3);
     expect(next.events[0]).toBe(untouched);
-    expect(next.events[1].input.name).toBe('Imported version');
+    expect(next.events[1]!.input.name).toBe('Imported version');
     expect(next.selectedId).toBe('replace');
     expect(next.corruptStorageProtected).toBe(false);
     expect(next.notice?.kind).toBe('success');

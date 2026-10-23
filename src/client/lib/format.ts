@@ -22,6 +22,7 @@ export function money(amount: number, currency: string): string {
   }).format(amount);
 }
 export function remainingDays(date: string): number {
-  const today = new Date(`${localDate()}T12:00:00`).getTime();
-  return Math.ceil((new Date(`${date}T12:00:00`).getTime() - today) / 86_400_000);
+  // Interpret both local calendar labels as UTC midnights, so DST never adds a day.
+  const today = new Date(`${localDate()}T00:00:00Z`).getTime();
+  return (new Date(`${date}T00:00:00Z`).getTime() - today) / 86_400_000;
 }

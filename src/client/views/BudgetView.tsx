@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { ArrowDownToLine, ClipboardList, Leaf, Wallet } from 'lucide-react';
 import type { Plan, StoredEvent } from '../../shared/schema.js';
 import { MoneySchema } from '../../shared/schema.js';
-import { csvCell, reallocateBudget, sumMoney } from '../lib/data.js';
+import { sumMoney } from '../lib/budget.js';
+import { createBudgetCsv } from '../lib/budget-export.js';
+import { editBudgetAmount, type BudgetField } from '../lib/plan-editors.js';
 import { money } from '../lib/format.js';
 import { download } from '../lib/download.js';
 import { StatCard } from '../components/StatCard.js';
@@ -16,41 +18,24 @@ export function BudgetView({
 }): React.ReactElement {
   const allocated = sumMoney(event.plan.budget.map((item) => item.allocated));
   const actual = sumMoney(event.plan.budget.map((item) => item.actual));
-  const [editingError, setEditingError] = useState('');
-  const change = (id: string, field: 'allocated' | 'actual', value: string) => {
+  const [editingError, setEditingError] = useState<{ id: string; field: BudgetField } | null>(null);
+  const errorId = useId();
+  const fieldError = (id: string, field: BudgetField) => {
+    const invalid = editingError?.id === id && editingError.field === field;
+    return { 'aria-invalid': invalid, 'aria-describedby': invalid ? errorId : undefined };
+  };
+  const change = (id: string, field: BudgetField, value: string) => {
     const amount = Number(value);
     if (!MoneySchema.safeParse(amount).success) {
-      setEditingError('Enter an amount between 0 and 100,000,000 with up to two decimal places.');
+      setEditingError({ id, field });
       return;
     }
-    setEditingError('');
-    updatePlan((plan) => ({
-      ...plan,
-      budget:
-        field === 'allocated'
-          ? reallocateBudget(plan.budget, id, amount)
-          : plan.budget.map((item) => (item.id === id ? { ...item, actual: amount } : item)),
-    }));
+    setEditingError(null);
+    updatePlan((plan) => editBudgetAmount(plan, id, field, amount));
   };
   const exportBudget = () =>
     download(
-      '\uFEFF' +
-        [
-          [
-            'Category',
-            `Allocated (${event.input.currency})`,
-            `Actual (${event.input.currency})`,
-            'Remaining',
-          ],
-          ...event.plan.budget.map((item) => [
-            item.category,
-            item.allocated,
-            item.actual,
-            item.allocated - item.actual,
-          ]),
-        ]
-          .map((row) => row.map(csvCell).join(','))
-          .join('\r\n'),
+      createBudgetCsv(event.plan.budget, event.input.currency),
       'celebrate-budget.csv',
       'text/csv;charset=utf-8',
     );
@@ -102,8 +87,8 @@ export function BudgetView({
         </p>
       )}
       {editingError && (
-        <p role="alert" className="callout warning">
-          {editingError}
+        <p id={errorId} role="alert" className="callout warning">
+          Enter an amount between 0 and 100,000,000 with up to two decimal places.
         </p>
       )}
       <article className="card budget-table-card">
@@ -139,6 +124,7 @@ export function BudgetView({
                       max="100000000"
                       step="0.01"
                       value={item.allocated}
+                      {...fieldError(item.id, 'allocated')}
                       onChange={(changeEvent) =>
                         change(item.id, 'allocated', changeEvent.target.value)
                       }
@@ -152,6 +138,7 @@ export function BudgetView({
                       max="100000000"
                       step="0.01"
                       value={item.actual}
+                      {...fieldError(item.id, 'actual')}
                       onChange={(changeEvent) =>
                         change(item.id, 'actual', changeEvent.target.value)
                       }

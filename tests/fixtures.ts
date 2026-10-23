@@ -20,7 +20,7 @@ export const brief: EventInput = {
 export function savedEvent(id = 'event-one'): StoredEvent {
   return {
     id,
-    input: { ...brief },
+    input: structuredClone(brief),
     plan: generatePlan(brief, '2030-01-01'),
     updatedAt: '2030-01-01T12:00:00.000Z',
   };

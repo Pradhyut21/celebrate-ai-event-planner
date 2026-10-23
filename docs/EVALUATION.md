@@ -15,6 +15,8 @@ This index maps the challenge requirements to implementation and verification. I
 
 Maintainability checks include a pure workspace reducer, focused side-effect hooks, a validated request service, immutable event templates and separate server configuration/security/resource modules. Type-aware lint rejects floating or misused promises; Prettier enforces a consistent style. `npm run check:bundle` protects JavaScript/CSS transfer budgets. Form error focus, screen-reader descriptions, mobile route focus, 320-pixel reflow and WCAG 2.2 target size are covered in browser regressions. See [maintenance guidance](MAINTENANCE.md).
 
+The planner separates budget, schedule, ideas and warnings into private functions with named policies. Client budget arithmetic, CSV generation and typed plan editors are independently tested. Checked indexed access catches missing-row assumptions. Regression tests cover queued checklist edits, positive sub-cent budgets, daylight-saving transitions, custom-priority editing, and generation/storage failures announced inside active dialogs. Provider failures cancel streamed bodies and release their request deadline.
+
 1. **Wedding:** prioritize food and photography, request access support, and create a budget whose allocations exactly match the total. See ceremony and RSVP tasks and track supplier confirmations.
 2. **Birthday:** specify an outdoor location, dietary needs and a personal style. See weather-backup/dietary tasks and inclusive ideas; enter actual spending and detect overspend.
 3. **Community event:** plan a large gathering with volunteer and safety priorities. See permit/capacity checks, outreach and volunteer coordination; use the print view for the organizing team.

@@ -7,7 +7,7 @@ export const MoneySchema = z
   .min(0)
   .max(100_000_000)
   .refine(
-    (value) => Math.abs(value * 100 - Math.round(value * 100)) < 0.00001,
+    (value) => value === Math.round(value * 100) / 100,
     'Use no more than two decimal places.',
   );
 
@@ -51,6 +51,27 @@ export const EventInputSchema = z
   .strict();
 export type EventInput = z.infer<typeof EventInputSchema>;
 
+const ChecklistSchema = z
+  .array(text(300))
+  .max(15)
+  .refine((items) => new Set(items).size === items.length, 'Checklist items must be unique.');
+
+const VendorSchema = z
+  .object({
+    id: z.string().min(1).max(80),
+    category: text(100),
+    checklist: ChecklistSchema,
+    completedChecklist: ChecklistSchema.default([]),
+    status: z.enum(['not-started', 'contacted', 'booked']),
+    name: text(120),
+    quote: MoneySchema,
+  })
+  .strict()
+  .refine((vendor) => vendor.completedChecklist.every((item) => vendor.checklist.includes(item)), {
+    path: ['completedChecklist'],
+    message: 'Completed items must belong to the vendor checklist.',
+  });
+
 export const PlanSchema = z
   .object({
     summary: text(1_400).pipe(z.string().min(1)),
@@ -80,21 +101,7 @@ export const PlanSchema = z
           .strict(),
       )
       .max(60),
-    vendors: z
-      .array(
-        z
-          .object({
-            id: z.string().min(1).max(80),
-            category: text(100),
-            checklist: z.array(text(300)).max(15),
-            completedChecklist: z.array(text(300)).max(15).default([]),
-            status: z.enum(['not-started', 'contacted', 'booked']),
-            name: text(120),
-            quote: MoneySchema,
-          })
-          .strict(),
-      )
-      .max(20),
+    vendors: z.array(VendorSchema).max(20),
     ideas: z
       .array(
         z

@@ -27,9 +27,9 @@ describe('browser workspace recovery', () => {
     const initial = loadInitial();
     expect(initial.warning).toBe('');
     expect(initial.events).toHaveLength(1);
-    expect(initial.events[0].id).toBe('sample-celebration');
-    expect(initial.events[0].plan.generatedBy).toBe('rules');
-    expect(initial.events[0].input.date).toBe(futureDate(150));
+    expect(initial.events[0]!.id).toBe('sample-celebration');
+    expect(initial.events[0]!.plan.generatedBy).toBe('rules');
+    expect(initial.events[0]!.input.date).toBe(futureDate(150));
   });
   it('loads validated saved events and preserves an intentionally empty workspace', () => {
     const initial = loadInitial();
@@ -42,7 +42,7 @@ describe('browser workspace recovery', () => {
     localStorage.setItem(STORAGE_KEY, '{broken JSON');
     const initial = loadInitial();
     expect(initial.warning).toContain('could not be loaded');
-    expect(initial.events[0].id).toBe('sample-celebration');
+    expect(initial.events[0]!.id).toBe('sample-celebration');
     expect(localStorage.getItem(STORAGE_KEY)).toBe('{broken JSON');
   });
   it('remains usable when browser privacy settings deny storage access', () => {
@@ -51,7 +51,7 @@ describe('browser workspace recovery', () => {
     });
     const initial = loadInitial();
     expect(initial.warning).toContain('could not be loaded');
-    expect(initial.events[0].plan.tasks.length).toBeGreaterThan(0);
+    expect(initial.events[0]!.plan.tasks.length).toBeGreaterThan(0);
   });
 });
 

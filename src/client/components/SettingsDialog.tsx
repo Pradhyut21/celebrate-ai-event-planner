@@ -9,6 +9,7 @@ import { STORAGE_KEY } from '../lib/data.js';
 type SettingsProps = {
   current?: StoredEvent;
   notice: Notice | null;
+  storageWarning: string;
   health: Health | null;
   healthError: boolean;
   token: string;
@@ -24,6 +25,7 @@ type SettingsProps = {
 export function SettingsDialog({
   current,
   notice,
+  storageWarning,
   health,
   healthError,
   token,
@@ -38,6 +40,11 @@ export function SettingsDialog({
 }: SettingsProps): React.ReactElement {
   return (
     <Dialog title="Settings & backups" onClose={onClose}>
+      {storageWarning && (
+        <p role="alert" className="notice error">
+          {storageWarning}
+        </p>
+      )}
       {notice && (
         <div
           role={notice.kind === 'error' ? 'alert' : 'status'}

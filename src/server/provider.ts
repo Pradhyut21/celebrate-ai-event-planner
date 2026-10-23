@@ -130,7 +130,11 @@ export async function enrichPlan(
           },
         }),
       });
-      if (!response.ok) throw new Error('Provider unavailable');
+      if (!response.ok) {
+        // Release streamed error bodies without parsing or exposing upstream details.
+        await response.body?.cancel().catch(() => undefined);
+        throw new Error('Provider unavailable');
+      }
       const envelope = ResponseEnvelopeSchema.parse(
         JSON.parse(await readLimited(response)) as unknown,
       );
@@ -159,6 +163,7 @@ export async function enrichPlan(
       ],
     };
   } finally {
+    controller.abort();
     if (timer) clearTimeout(timer);
   }
 }

@@ -89,7 +89,7 @@ describe('validated browser planning service', () => {
 
   it('rejects a well-shaped plan whose allocations do not match the requested event', async () => {
     const plan = savedEvent().plan;
-    plan.budget[0].allocated += 1;
+    plan.budget[0]!.allocated += 1;
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(json({ plan }));
     await expect(requestPlan(brief, { fetcher })).rejects.toMatchObject({ code: 'invalid-plan' });
   });

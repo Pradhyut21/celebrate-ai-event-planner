@@ -6,9 +6,25 @@ import {
   type Plan,
 } from './schema.js';
 
-import { EVENT_TEMPLATES, VENDOR_CHECKLISTS } from './templates.js';
+import {
+  EVENT_TEMPLATES,
+  VENDOR_CHECKLISTS,
+  type BudgetCategory,
+  type EventTemplate,
+} from './templates.js';
 
 const DAY_MS = 86_400_000;
+const CONTINGENCY_SHARE = 0.1;
+const PRIORITY_WEIGHT_BOOST = 12;
+const COMPRESSED_TIMELINE_DAYS = 30;
+const LARGE_GATHERING_GUESTS = 300;
+const LEAN_BUDGET_PER_GUEST: Readonly<Record<EventInput['currency'], number>> = {
+  INR: 500,
+  USD: 20,
+  EUR: 20,
+  GBP: 18,
+};
+
 export function utcToday(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -23,8 +39,9 @@ function allocateCents(total: number, weights: number[]): number[] {
     .map((quota, index) => ({ index, remainder: quota - amounts[index]! }))
     .sort((a, b) => b.remainder - a.remainder || a.index - b.index);
   for (const item of order) {
-    if (remaining-- <= 0) break;
+    if (remaining <= 0) break;
     amounts[item.index]! += 1;
+    remaining -= 1;
   }
   return amounts;
 }
@@ -36,18 +53,18 @@ function dueDate(eventDate: string, daysBefore: number, today: string): string {
   return proposed < today ? today : proposed;
 }
 
-/** Pure planning engine: no network, random IDs, location inference or supplier claims. */
-export function generatePlan(raw: EventInput, today = utcToday()): Plan {
-  const input = EventInputSchema.parse(raw);
-  DateOnlySchema.parse(today);
-  if (input.date < today) throw new RangeError('Choose today or a future event date.');
-  const template = EVENT_TEMPLATES[input.type];
-  const priorities = input.priorities.join(' ').toLowerCase().normalize('NFKD');
+function selectCategories(
+  input: EventInput,
+  template: EventTemplate,
+  priorities: string,
+): BudgetCategory[] {
   const categories = template.categories.map((category) => ({
     ...category,
     weight:
       category.weight +
-      (category.keywords.some((keyword) => priorities.includes(keyword)) ? 12 : 0),
+      (category.keywords.some((keyword) => priorities.includes(keyword))
+        ? PRIORITY_WEIGHT_BOOST
+        : 0),
   }));
   if (input.accessibility || priorities.includes('access')) {
     categories.push({
@@ -57,8 +74,12 @@ export function generatePlan(raw: EventInput, today = utcToday()): Plan {
       keywords: [],
     });
   }
+  return categories;
+}
+
+function buildBudget(input: EventInput, categories: readonly BudgetCategory[]): Plan['budget'] {
   const totalCents = Math.round(input.budget * 100);
-  const reserveCents = Math.round(totalCents * 0.1);
+  const reserveCents = Math.round(totalCents * CONTINGENCY_SHARE);
   const allocated = allocateCents(
     totalCents - reserveCents,
     categories.map((category) => category.weight),
@@ -75,7 +96,10 @@ export function generatePlan(raw: EventInput, today = utcToday()): Plan {
     allocated: reserveCents / 100,
     actual: 0,
   });
+  return budget;
+}
 
+function buildTimeline(input: EventInput, template: EventTemplate, today: string): Plan['tasks'] {
   const tasks: Plan['tasks'] = template.tasks.map(([id, title, days, category]) => ({
     id,
     title,
@@ -109,7 +133,10 @@ export function generatePlan(raw: EventInput, today = utcToday()): Plan {
     });
   }
   tasks.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  return tasks;
+}
 
+function buildIdeas(input: EventInput, template: EventTemplate, priorities: string): Plan['ideas'] {
   const ideas = template.ideas.map((idea) => ({ ...idea }));
   ideas.push({
     id: 'personal-vibe',
@@ -141,7 +168,10 @@ export function generatePlan(raw: EventInput, today = utcToday()): Plan {
       title: 'Keep your personal details visible',
       description: `Discuss these preferences with the planning team: ${input.notes.slice(0, 400)}. Confirm any cultural or family traditions with the people involved instead of assuming them from the location.`,
     });
+  return ideas.slice(0, 12);
+}
 
+function buildWarnings(input: EventInput, today: string): Plan['warnings'] {
   const days = Math.round(
     (new Date(`${input.date}T00:00:00Z`).getTime() - new Date(`${today}T00:00:00Z`).getTime()) /
       DAY_MS,
@@ -149,16 +179,16 @@ export function generatePlan(raw: EventInput, today = utcToday()): Plan {
   const warnings = [
     'Allocations are planning targets, not vendor quotes. Confirm local prices, taxes, permits and availability before booking.',
   ];
-  if (days < 30)
+  if (days < COMPRESSED_TIMELINE_DAYS)
     warnings.push(
       'The timeline is compressed. Earlier milestones are due today; prioritize venue, essential suppliers and guest communication.',
     );
-  const floor = { INR: 500, USD: 20, EUR: 20, GBP: 18 }[input.currency];
+  const floor = LEAN_BUDGET_PER_GUEST[input.currency];
   if (input.budget / input.guests < floor)
     warnings.push(
       'Your budget per guest is lean by this planner’s rough heuristic. Consider a simpler venue, a shorter format or fewer paid services; validate with local quotes.',
     );
-  if (input.guests > 300)
+  if (input.guests > LARGE_GATHERING_GUESTS)
     warnings.push(
       'For a large gathering, confirm venue capacity, crowd flow, toilets, first aid coverage and local requirements with the responsible organizers.',
     );
@@ -166,10 +196,34 @@ export function generatePlan(raw: EventInput, today = utcToday()): Plan {
     warnings.push(
       'Dietary notes are preferences to verify. Allergy-safe preparation and cross-contact controls must be confirmed directly with the caterer.',
     );
+  return warnings;
+}
+
+function buildSummary(input: EventInput): string {
+  const formattedBudget = input.budget.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  const prioritySummary = input.priorities.length
+    ? `Planning priorities: ${input.priorities.join(', ')}.`
+    : 'Start with the venue, guest needs and essential suppliers.';
+  return [
+    `${input.name} is a ${input.vibe || 'warm and welcoming'} ${input.type} for ${input.guests} guests in ${input.location} on ${input.date}.`,
+    `Your ${input.currency} ${formattedBudget} budget includes a ${CONTINGENCY_SHARE * 100}% contingency reserve.`,
+    prioritySummary,
+  ].join(' ');
+}
+
+/** Pure planning engine: no network, random IDs, location inference or supplier claims. */
+export function generatePlan(raw: EventInput, today = utcToday()): Plan {
+  const input = EventInputSchema.parse(raw);
+  DateOnlySchema.parse(today);
+  if (input.date < today) throw new RangeError('Choose today or a future event date.');
+
+  const template = EVENT_TEMPLATES[input.type];
+  const priorities = input.priorities.join(' ').toLowerCase().normalize('NFKD');
+  const categories = selectCategories(input, template, priorities);
   return PlanSchema.parse({
-    summary: `${input.name} is a ${input.vibe || 'warm and welcoming'} ${input.type} for ${input.guests} guests in ${input.location} on ${input.date}. Your ${input.currency} ${input.budget.toLocaleString('en-US', { maximumFractionDigits: 2 })} budget includes a 10% contingency reserve. ${input.priorities.length ? `Planning priorities: ${input.priorities.join(', ')}.` : 'Start with the venue, guest needs and essential suppliers.'}`,
-    budget,
-    tasks,
+    summary: buildSummary(input),
+    budget: buildBudget(input, categories),
+    tasks: buildTimeline(input, template, today),
     vendors: categories.map((category) => ({
       id: category.id,
       category: category.name,
@@ -179,8 +233,8 @@ export function generatePlan(raw: EventInput, today = utcToday()): Plan {
       name: '',
       quote: 0,
     })),
-    ideas: ideas.slice(0, 12),
-    warnings,
+    ideas: buildIdeas(input, template, priorities),
+    warnings: buildWarnings(input, today),
     generatedBy: 'rules',
   });
 }

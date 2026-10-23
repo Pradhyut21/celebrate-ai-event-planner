@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import {
-  csvCell,
-  MAX_BACKUP_BYTES,
-  parseBackup,
-  reallocateBudget,
-  serializeBackup,
-  sumMoney,
-} from '../src/client/lib/data.js';
+import { MAX_BACKUP_BYTES, parseBackup, serializeBackup } from '../src/client/lib/data.js';
+import { reallocateBudget, sumMoney } from '../src/client/lib/budget.js';
+import { csvCell, createBudgetCsv } from '../src/client/lib/budget-export.js';
 import { generatePlan } from '../src/shared/planner.js';
 import type { EventInput, StoredEvent } from '../src/shared/schema.js';
 
@@ -34,9 +29,9 @@ const event: StoredEvent = {
 describe('backup boundary', () => {
   it('round-trips meaningful event data, completed tasks, quotes, and checklist progress', () => {
     const copy = structuredClone(event);
-    copy.plan.tasks[0].completed = true;
-    copy.plan.vendors[0].quote = 300.25;
-    copy.plan.vendors[0].completedChecklist = [copy.plan.vendors[0].checklist[0]];
+    copy.plan.tasks[0]!.completed = true;
+    copy.plan.vendors[0]!.quote = 300.25;
+    copy.plan.vendors[0]!.completedChecklist = [copy.plan.vendors[0]!.checklist[0]!];
     expect(parseBackup(serializeBackup([copy]))).toEqual([copy]);
   });
 
@@ -76,7 +71,7 @@ describe('backup boundary', () => {
 
   it('rejects structurally plausible plans with a broken financial invariant', () => {
     const damaged = structuredClone(event);
-    damaged.plan.budget[0].allocated += 1;
+    damaged.plan.budget[0]!.allocated += 1;
     expect(() => parseBackup(serializeBackup([damaged]))).toThrow(/allocation/i);
   });
 });
@@ -98,6 +93,20 @@ describe('spreadsheet export safety', () => {
     expect(csvCell(123.45)).toBe('"123.45"');
     expect(csvCell('Food & drinks')).toBe('"Food & drinks"');
   });
+  it('exports currency-labelled rows with exact cent differences and safe category text', () => {
+    const csv = createBudgetCsv(
+      [
+        { id: 'food', category: '=SUM(1)', allocated: 0.3, actual: 0.1 },
+        { id: 'decor', category: 'Decor, "flowers"', allocated: 1, actual: 2.01 },
+      ],
+      'USD',
+    );
+    expect(csv).toBe(
+      '\uFEFF"Category","Allocated (USD)","Actual (USD)","Remaining"\r\n' +
+        '"\'=SUM(1)","0.3","0.1","0.2"\r\n' +
+        '"Decor, ""flowers""","1","2.01","\'-1.01"',
+    );
+  });
 });
 
 describe('financial editing', () => {
@@ -115,14 +124,14 @@ describe('financial editing', () => {
     const adjusted = reallocateBudget(budget, 'food', 90.25);
     expect(adjusted.map((item) => item.allocated)).toEqual([90.25, 9.75, 0]);
     expect(sumMoney(adjusted.map((item) => item.allocated))).toBe(100);
-    expect(budget[0].allocated).toBe(70.1);
+    expect(budget[0]!.allocated).toBe(70.1);
   });
   it('returns reductions to the final other category', () => {
-    expect(reallocateBudget(budget, 'food', 60)[2].allocated).toBe(19.8);
-    expect(reallocateBudget(budget, 'reserve', 9)[1].allocated).toBe(20.9);
+    expect(reallocateBudget(budget, 'food', 60)[2]!.allocated).toBe(19.8);
+    expect(reallocateBudget(budget, 'reserve', 9)[1]!.allocated).toBe(20.9);
     expect(reallocateBudget(budget, 'food', 70.1)).toEqual(budget);
   });
-  it.each([-1, 100.01, 1.001, Number.NaN, Number.POSITIVE_INFINITY])(
+  it.each([-1, 100.01, 1.001, 1e-8, 0.010000001, Number.NaN, Number.POSITIVE_INFINITY])(
     'rejects invalid allocation %s',
     (amount) => {
       expect(() => reallocateBudget(budget, 'food', amount)).toThrow();
@@ -130,7 +139,7 @@ describe('financial editing', () => {
   );
   it('rejects unknown IDs and a changing single-category total', () => {
     expect(() => reallocateBudget(budget, 'missing', 1)).toThrow(/not found/);
-    expect(() => reallocateBudget([budget[0]], 'food', 70)).toThrow(/single category/);
-    expect(reallocateBudget([budget[0]], 'food', 70.1)).toEqual([budget[0]]);
+    expect(() => reallocateBudget([budget[0]!], 'food', 70)).toThrow(/single category/);
+    expect(reallocateBudget([budget[0]!], 'food', 70.1)).toEqual([budget[0]]);
   });
 });

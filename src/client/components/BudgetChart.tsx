@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Plan } from '../../shared/schema.js';
 import { money } from '../lib/format.js';
-import { sumMoney } from '../lib/data.js';
+import { sumMoney } from '../lib/budget.js';
 
 export function BudgetChart({
   budget,

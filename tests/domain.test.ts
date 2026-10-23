@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   EventInputSchema,
+  MoneySchema,
   PlanSchema,
   StoredEventSchema,
   type EventInput,
@@ -42,6 +43,19 @@ describe('trusted event planning engine', () => {
       ),
     ).toBe(true);
     expect(plan.tasks.some((task) => task.dueDate === input.date)).toBe(true);
+  });
+
+  it('keeps template content and later plans independent of edits to an earlier plan', () => {
+    const expected = generatePlan(input, today);
+    const edited = generatePlan(input, today);
+    edited.budget[0]!.allocated = 0;
+    edited.tasks[0]!.completed = true;
+    edited.ideas[0]!.description = 'Changed for this event only';
+    edited.vendors[0]!.checklist.push('A private event-specific reminder');
+    edited.vendors[0]!.completedChecklist.push(edited.vendors[0]!.checklist[0]!);
+
+    expect(generatePlan(input, today)).toEqual(expected);
+    expect(input.priorities).toEqual(['Food']);
   });
 
   it('preserves every cent across types, priorities and tiny or large budgets', () => {
@@ -130,6 +144,36 @@ describe('trusted event planning engine', () => {
     expect(() => generatePlan({ ...input, date: '2026-12-31' }, today)).toThrow(RangeError);
   });
 
+  it('applies compressed-timeline and crowd warnings only past their policy boundaries', () => {
+    const boundary = generatePlan({ ...input, date: '2027-01-31', guests: 300 }, today);
+    expect(boundary.warnings.some((warning) => warning.includes('compressed'))).toBe(false);
+    expect(boundary.warnings.some((warning) => warning.includes('crowd flow'))).toBe(false);
+
+    const beyond = generatePlan({ ...input, date: '2027-01-30', guests: 301 }, today);
+    expect(beyond.warnings.some((warning) => warning.includes('compressed'))).toBe(true);
+    expect(beyond.warnings.some((warning) => warning.includes('crowd flow'))).toBe(true);
+  });
+
+  it.each([
+    ['INR', 500],
+    ['USD', 20],
+    ['EUR', 20],
+    ['GBP', 18],
+  ] as const)(
+    'uses the stated %s budget heuristic without treating it as a vendor quote',
+    (currency, floor) => {
+      const atFloor = generatePlan({ ...input, currency, guests: 1, budget: floor }, today);
+      const below = generatePlan({ ...input, currency, guests: 1, budget: floor - 0.01 }, today);
+      expect(atFloor.warnings.some((warning) => warning.includes('budget per guest is lean'))).toBe(
+        false,
+      );
+      expect(below.warnings.some((warning) => warning.includes('budget per guest is lean'))).toBe(
+        true,
+      );
+      expect(atFloor.warnings[0]).toContain('not vendor quotes');
+    },
+  );
+
   it('handles maximum permitted text fields without producing an invalid plan', () => {
     const large = {
       ...input,
@@ -155,6 +199,20 @@ describe('trusted event planning engine', () => {
 });
 
 describe('input and import boundary validation', () => {
+  it('accepts canonical currency values including zero, ordinary fractions and the upper limit', () => {
+    for (const value of [0, 0.01, 0.29, 1.1, 12.99, 2_501.37, 99_999_999.99, 100_000_000]) {
+      expect(MoneySchema.parse(value)).toBe(value);
+    }
+  });
+
+  it.each([1e-8, 0.010000001, 1.100000001])(
+    'rejects sub-cent precision %s before a positive event budget can round to zero',
+    (budget) => {
+      expect(MoneySchema.safeParse(budget).success).toBe(false);
+      expect(() => generatePlan({ ...input, budget }, today)).toThrow();
+    },
+  );
+
   it.each([
     { budget: -1 },
     { budget: 0 },
@@ -200,5 +258,29 @@ describe('input and import boundary validation', () => {
     const late = structuredClone(valid);
     late.plan.tasks[0]!.dueDate = '2028-01-01';
     expect(StoredEventSchema.safeParse(late).success).toBe(false);
+  });
+
+  it('validates vendor progress against its own unique checklist', () => {
+    const valid = {
+      id: 'event-1',
+      input,
+      plan: generatePlan(input, today),
+      updatedAt: '2027-01-01T12:00:00.000Z',
+    };
+    const vendor = valid.plan.vendors[0]!;
+    vendor.completedChecklist = [vendor.checklist[0]!];
+    expect(StoredEventSchema.safeParse(valid).success).toBe(true);
+
+    const unknownItem = structuredClone(valid);
+    unknownItem.plan.vendors[0]!.completedChecklist.push('Not a task on this checklist');
+    expect(StoredEventSchema.safeParse(unknownItem).success).toBe(false);
+
+    const duplicateProgress = structuredClone(valid);
+    duplicateProgress.plan.vendors[0]!.completedChecklist.push(vendor.checklist[0]!);
+    expect(StoredEventSchema.safeParse(duplicateProgress).success).toBe(false);
+
+    const duplicateTask = structuredClone(valid);
+    duplicateTask.plan.vendors[0]!.checklist.push(vendor.checklist[0]!);
+    expect(StoredEventSchema.safeParse(duplicateTask).success).toBe(false);
   });
 });

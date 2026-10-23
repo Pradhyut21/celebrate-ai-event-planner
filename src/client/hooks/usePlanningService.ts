@@ -4,6 +4,12 @@ import type { Health, Notice } from '../types.js';
 import { createPlan, requestHealth } from '../services/planning.js';
 import type { PlanResult } from '../services/planning.js';
 
+export type GeneratePlan = (
+  input: EventInput,
+  onCreated: (result: PlanResult) => void,
+  onError: (notice: Notice) => void,
+) => Promise<void>;
+
 /** Own request cancellation and the synchronous duplicate-submit guard for one mounted workspace. */
 export function usePlanningService() {
   const [health, setHealth] = useState<Health | null>(null);
@@ -28,11 +34,7 @@ export function usePlanningService() {
       generation.current?.abort();
     };
   }, []);
-  const generate = async (
-    input: EventInput,
-    onCreated: (result: PlanResult) => void,
-    onError: (notice: Notice) => void,
-  ) => {
+  const generate: GeneratePlan = async (input, onCreated, onError) => {
     if (generation.current) return;
     const controller = new AbortController();
     generation.current = controller;

@@ -1,7 +1,12 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { Store } from 'lucide-react';
 import type { Plan, StoredEvent } from '../../shared/schema.js';
 import { MoneySchema } from '../../shared/schema.js';
+import {
+  editVendorDetails,
+  setVendorChecklistItem,
+  type VendorDetails,
+} from '../lib/plan-editors.js';
 
 export function VendorsView({
   event,
@@ -10,14 +15,10 @@ export function VendorsView({
   event: StoredEvent;
   updatePlan: (update: (plan: Plan) => Plan) => void;
 }): React.ReactElement {
-  const [vendorError, setVendorError] = useState('');
-  const updateVendor = (id: string, changes: Partial<Plan['vendors'][number]>) =>
-    updatePlan((plan) => ({
-      ...plan,
-      vendors: plan.vendors.map((vendor) =>
-        vendor.id === id ? { ...vendor, ...changes } : vendor,
-      ),
-    }));
+  const [vendorError, setVendorError] = useState<string | null>(null);
+  const errorId = useId();
+  const updateVendor = (id: string, changes: VendorDetails) =>
+    updatePlan((plan) => editVendorDetails(plan, id, changes));
   return (
     <>
       <div className="section-heading">
@@ -31,8 +32,8 @@ export function VendorsView({
         </span>
       </div>
       {vendorError && (
-        <p role="alert" className="callout warning">
-          {vendorError}
+        <p id={errorId} role="alert" className="callout warning">
+          Enter a quote between 0 and 100,000,000 with up to two decimal places.
         </p>
       )}
       <p className="callout">
@@ -68,15 +69,14 @@ export function VendorsView({
                   max="100000000"
                   step="0.01"
                   value={vendor.quote}
+                  aria-invalid={vendorError === vendor.id}
+                  aria-describedby={vendorError === vendor.id ? errorId : undefined}
                   onChange={(changeEvent) => {
                     const quote = Number(changeEvent.target.value);
                     if (MoneySchema.safeParse(quote).success) {
-                      setVendorError('');
+                      setVendorError(null);
                       updateVendor(vendor.id, { quote });
-                    } else
-                      setVendorError(
-                        'Enter a quote between 0 and 100,000,000 with up to two decimal places.',
-                      );
+                    } else setVendorError(vendor.id);
                   }}
                 />
               </label>
@@ -106,13 +106,12 @@ export function VendorsView({
                       type="checkbox"
                       checked={vendor.completedChecklist.includes(item)}
                       aria-label={`${vendor.category}: ${item}`}
-                      onChange={(changeEvent) =>
-                        updateVendor(vendor.id, {
-                          completedChecklist: changeEvent.target.checked
-                            ? [...vendor.completedChecklist, item]
-                            : vendor.completedChecklist.filter((entry) => entry !== item),
-                        })
-                      }
+                      onChange={(changeEvent) => {
+                        const completed = changeEvent.target.checked;
+                        updatePlan((plan) =>
+                          setVendorChecklistItem(plan, vendor.id, item, completed),
+                        );
+                      }}
                     />
                     <span>{item}</span>
                   </label>
