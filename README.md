@@ -97,7 +97,7 @@ scripts/         Submission size, branch and accidental-secret checks
 .github/         Pinned CI/security workflows and dependency monitoring config
 ```
 
-The server stores no event records. Request and provider output sizes, network time and concurrent generations are bounded. Rate-limit state is bounded and expires. Planning costs are linear in the small fixed template size; the browser reuses an event's saved plan without making AI requests for edits to spend or checklists. Production code splits the UI bundle from the server; no browser SDK or heavyweight media is required.
+The server stores no event records. Request and provider output sizes, network time and concurrent generations are bounded. AI rate-limit state has an explicit capacity and expiry; page requests use a separate expiring limiter. Planning costs are linear in the small fixed template size; the browser reuses an event's saved plan without making AI requests for edits to spend or checklists. Production code splits the UI bundle from the server; no browser SDK or heavyweight media is required.
 
 ## Verify the submission
 
@@ -109,9 +109,9 @@ npm run test:e2e
 npm audit --audit-level=high
 ```
 
-`npm run check` runs strict TypeScript, lint (including accessibility rules), coverage-gated tests, production build and tracked-repository checks. On a fresh checkout, files are already tracked. If adding files, stage them before the size check. Coverage gates cover shared rules, API/provider logic and client helpers; browser workflows exercise the rendered interface. The verified suite contains **86 unit/integration tests and 7 browser tests**, with **98.41% line coverage** over the covered domain/server/helper modules. Automated accessibility scans supplement keyboard checks and do not establish complete WCAG conformance.
+`npm run check` runs strict TypeScript, lint (including accessibility rules), coverage-gated tests, production build and tracked-repository checks. On a fresh checkout, files are already tracked. If adding files, stage them before the size check. Coverage gates cover shared rules, API/provider logic and client helpers; browser workflows exercise the rendered interface. The verified suite contains **87 unit/integration tests and 7 browser tests**, with **99.60% line coverage** over the covered domain/server/helper modules. Automated accessibility scans supplement keyboard checks and do not establish complete WCAG conformance.
 
-GitHub Actions repeats these checks on `main`, saves reports as workflow artifacts and runs CodeQL security analysis. Actions use pinned commits and limited permissions. No test requires a provider key or paid request. Live paid-provider calls are not part of automated verification.
+GitHub Actions repeats these checks on `main`, saves reports as workflow artifacts and runs CodeQL security analysis. The security workflow also fails when high or critical CodeQL findings remain open after analysis. Actions use pinned commits and limited permissions. No test requires a provider key or paid request. Live paid-provider calls are not part of automated verification.
 
 See [evaluation evidence](docs/EVALUATION.md), [verification results](docs/VERIFICATION.md), [threat model](docs/THREAT_MODEL.md), [security policy](SECURITY.md) and [contribution guide](CONTRIBUTING.md).
 

@@ -1,4 +1,5 @@
 import express, {type ErrorRequestHandler, type Express} from 'express';
+import { rateLimit } from 'express-rate-limit';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import path from 'node:path';
 import { EventInputSchema } from '../shared/schema.js';
@@ -16,6 +17,7 @@ export interface AppOptions extends ProviderOptions {
   now?: () => number;
   today?: () => string;
   staticDir?: string;
+  staticRateLimit?: number;
 }
 
 const localOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3001', 'http://127.0.0.1:3001'];
@@ -98,6 +100,12 @@ export function createApp(options: AppOptions = {}): Express {
   app.use('/api', (_, response) => {response.status(404).json({error: 'API route not found.'});});
   if (options.staticDir) {
     const directory = path.resolve(options.staticDir);
+    // Pages and assets use a separate budget, so browsing cannot exhaust API quota.
+    app.use(rateLimit({
+      windowMs: 60_000, limit: options.staticRateLimit ?? 300,
+      standardHeaders: true, legacyHeaders: false,
+      message: {error: 'Too many page requests. Please try again shortly.'},
+    }));
     app.use(express.static(directory, {dotfiles: 'deny', index: 'index.html'}));
     app.get('/{*path}', (_, response) => {response.sendFile(path.join(directory, 'index.html'));});
   }

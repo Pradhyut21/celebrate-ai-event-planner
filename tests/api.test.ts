@@ -1,4 +1,7 @@
 import request from 'supertest';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { createApp } from '../src/server/app.js';
 import { PlanResponseSchema, type EventInput } from '../src/shared/schema.js';
@@ -111,5 +114,29 @@ describe('planner HTTP boundary', () => {
     const response = await request(app).post('/api/plan').send(event).expect(500);
     expect(response.body).toEqual({error: 'The planner could not complete this request. Please try again.'});
     await request(app).get('/api/does-not-exist').expect(404, {error: 'API route not found.'});
+  });
+
+  it('limits static assets and SPA pages without consuming or blocking the API budget', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'celebrate-static-'));
+    try {
+      await writeFile(path.join(directory, 'index.html'), '<!doctype html><title>Celebrate</title><main>Plan your celebration</main>');
+      await writeFile(path.join(directory, 'style.css'), 'body { color: #222; }');
+      const app = createApp({...appOptions, production: true, staticDir: directory, staticRateLimit: 2});
+      await request(app).get('/style.css').expect(200).expect('Content-Type', /text\/css/);
+      await request(app).get('/events/a-celebration').expect(200).expect(/Plan your celebration/);
+      const limited = await request(app).get('/').expect(429);
+      expect(limited.body).toEqual({error: 'Too many page requests. Please try again shortly.'});
+      expect(limited.headers['retry-after']).toBeDefined();
+      expect(limited.headers['ratelimit-limit']).toBe('2');
+      expect(limited.headers['x-ratelimit-limit']).toBeUndefined();
+      expect(limited.headers['content-security-policy']).toContain("frame-ancestors 'none'");
+      expect(limited.headers['x-content-type-options']).toBe('nosniff');
+      expect(limited.headers['strict-transport-security']).toContain('max-age=31536000');
+      await request(app).get('/api/health').expect(200);
+      await request(app).post('/api/plan').send(event).expect(200);
+      await request(app).get('/api/unknown').expect(404);
+    } finally {
+      await rm(directory, {recursive: true, force: true});
+    }
   });
 });

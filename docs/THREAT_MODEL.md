@@ -53,6 +53,7 @@ The server calls a fixed HTTPS provider endpoint, rejects redirects, limits a re
 | Cross-origin browser use | Explicit Origin allowlist; no permissive CORS middleware; JSON media type required | `src/server/app.ts` |
 | Unauthorized paid API use | Optional bearer token; at least 16 characters; required at startup for production with a provider key; hash-based constant-time comparison | `src/server/app.ts` |
 | Resource exhaustion | Per-address 20 requests/minute by default; expiring map capped at 1,000 entries; at most four concurrent planning jobs | `src/server/app.ts` |
+| Static page and asset flooding | Separate 300 requests/minute per address using express-rate-limit; expiring process-local memory store; health/API routes remain separate | `src/server/app.ts`, static-route regression test |
 | Secret or error disclosure | Provider key remains server-side; client errors omit stack traces/provider response bodies; requests and event bodies are not logged | `src/server/app.ts`, `src/server/provider.ts` |
 | Injected active content or embedding | Same-origin CSP with no inline scripts or objects, frame denial, no-sniff content types, restricted browser capabilities | `src/server/app.ts`, browser text-rendering test |
 

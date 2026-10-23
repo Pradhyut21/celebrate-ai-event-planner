@@ -55,4 +55,6 @@ Success is `200 {"plan": ...}`. A plan contains a summary, `budget` allocation/a
 
 By default the server accepts 20 planning requests/minute per direct client address and at most four concurrent jobs. Limits are process-local and must be replaced with shared quotas for multi-instance deployment. `APP_ORIGIN` configures exact browser origins. Origin checking is not authentication; nonbrowser clients can omit this header.
 
+Production HTML and static assets have a separate 300-requests/minute address limit. A 429 page response includes retry guidance and security headers. Browsing cannot consume the planning API quota, and health checks remain available when the page quota is exhausted.
+
 The input/output TypeScript contracts live in `src/shared/schema.ts`; `tests/api.test.ts` verifies the boundary. No live provider call is required to exercise the API.

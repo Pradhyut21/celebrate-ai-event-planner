@@ -6,8 +6,8 @@ Verified on **23 October 2026** using Node.js **22.18.0**, npm **10.2.5**, and W
 | --- | --- |
 | `npm run typecheck` | Pass; strict TypeScript with unused-code checks |
 | `npm run lint` | Pass; zero warnings, React hooks and JSX accessibility rules included |
-| `npm run test:coverage` | 86 tests passed across five test files |
-| Coverage | Statements 96.40%; branches 91.75%; functions 95.77%; lines 98.41% |
+| `npm run test:coverage` | 87 tests passed across five test files |
+| Coverage | Statements 97.91%; branches 92.34%; functions 97.18%; lines 99.60% |
 | `npm run build` | Pass; Vite browser bundle plus compiled Node server |
 | `npm run test:e2e` | All seven Chromium browser tests passed |
 | Accessibility scans | Zero axe WCAG A/AA violations on the tested five planning views at desktop/mobile widths, desktop Create/Settings dialogs and mobile Create dialog |
@@ -27,6 +27,7 @@ The production browser assets are approximately **115.44 kB JavaScript** and **8
 - Exact-cent allocations, including one-cent and large budgets; initial reserve and priority weighting; distinct logic for weddings, birthdays and community gatherings.
 - Same-day and compressed schedules; invalid/past dates; access, dietary, outdoor and sustainability context.
 - Malformed, unknown-field, oversized, compressed and unsupported HTTP requests; exact origins; token protection before provider calls; spoof-resistant address limits; expiration, storage and concurrency bounds; safe errors.
+- Static pages and assets have a separate rate budget; exhausted page requests retain security headers while health checks and planning remain available.
 - Provider success, refusal, incomplete output, malformed JSON, invalid fields, oversized responses, timeout and prompt-injection-shaped user notes. Trusted finances/tasks remain unchanged.
 - Saved actual spend, rebalanced allocations, cent precision, timeline progress, vendor names/quotes/status/checklist completion and selected event across reloads.
 - JSON backup round trip, invalid imports, corrupted storage recovery, spreadsheet formula neutralization and hostile-looking text rendered safely.
