@@ -8,6 +8,8 @@
 
 No account or API key is needed to try the complete rules-based planner. With a server-side OpenAI key, the assistant personalizes the summary and ideas. The interface identifies which mode produced the plan and explains provider failures.
 
+![Celebrate AI workspace showing the sample wedding, budget, timeline, vendors and personalized ideas](docs/preview.png)
+
 ## Run locally
 
 Requires **Node.js 22.18+**, npm, and Git.
@@ -107,7 +109,7 @@ npm run test:e2e
 npm audit --audit-level=high
 ```
 
-`npm run check` runs strict TypeScript, lint (including accessibility rules), coverage-gated tests, production build and tracked-repository checks. On a fresh checkout, files are already tracked. If adding files, stage them before the size check. Coverage gates cover shared rules, API/provider logic and client helpers; browser workflows exercise the rendered interface. Automated accessibility scans supplement keyboard checks and do not establish complete WCAG conformance.
+`npm run check` runs strict TypeScript, lint (including accessibility rules), coverage-gated tests, production build and tracked-repository checks. On a fresh checkout, files are already tracked. If adding files, stage them before the size check. Coverage gates cover shared rules, API/provider logic and client helpers; browser workflows exercise the rendered interface. The verified suite contains **86 unit/integration tests and 7 browser tests**, with **98.41% line coverage** over the covered domain/server/helper modules. Automated accessibility scans supplement keyboard checks and do not establish complete WCAG conformance.
 
 GitHub Actions repeats these checks on `main`, saves reports as workflow artifacts and runs CodeQL security analysis. Actions use pinned commits and limited permissions. No test requires a provider key or paid request. Live paid-provider calls are not part of automated verification.
 

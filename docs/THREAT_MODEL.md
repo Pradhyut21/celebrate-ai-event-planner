@@ -22,10 +22,12 @@ The browser, its storage and uploaded backups are untrusted inputs. The optional
 
 ## Input and planning integrity
 
-- The shared Zod schemas validate explicit field types, lengths, supported event types/currencies, real calendar dates, finite amounts, cent precision and bounded arrays. Unknown object properties are rejected.
+- The shared Zod schemas validate explicit field types, lengths, supported event types/currencies, real calendar dates, finite amounts, cent precision and bounded arrays. Unknown properties in event and plan objects are rejected.
 - Persisted events additionally require exact cent allocation totals, unique IDs within plan collections and task dates no later than the event.
+- JSON backups are limited to 2 MB and 20 events; duplicate event IDs are rejected. The whole import is validated before changing existing events. Browser edits and API results must also satisfy the stored-event schema. Allocation changes rebalance other categories atomically in cents.
 - The pure planning engine allocates integer cents, reserves contingency and derives timelines from event context. Its results remain usable without a model key.
 - The interface renders user and generated text as React text. Event names, notes and model content are not interpreted as HTML, scripts or executable instructions.
+- CSV export quotes fields and prefixes spreadsheet formula markers, including whitespace-prefixed ones, so organizer/imported text is exported as text.
 
 ## Browser privacy
 
@@ -33,11 +35,13 @@ Event plans are stored in this browser’s localStorage. They are not encrypted 
 
 Clearing browser site data removes local plans. Browser storage is not a backup service or a synchronization mechanism. The application has no account recovery, cross-device synchronization or access-control boundary between people using the same browser profile.
 
+Unreadable saved data produces a recovery message and remains available for a raw recovery download in Settings. It is preserved until the organizer imports or makes new changes. Storage failures show an explicit instruction to keep the tab open and export a backup.
+
 ## Optional generative AI
 
 The provider credential belongs in the server environment, never in browser code or a committed environment file. The browser sends event context to the application API; when AI is enabled, the server sends the planning context to the fixed provider endpoint. Organizers who require entirely local planning should leave the provider key unset.
 
-AI may enrich summaries and personalized ideas. Deterministic budgets, timeline tasks and vendor checklists remain under application control. Provider errors and invalid provider output should preserve a usable rules-based plan and an honest explanation of the fallback.
+AI may enrich summaries and personalized ideas. Deterministic budgets, timeline tasks and vendor checklists remain under application control. Provider errors and invalid provider output preserve a usable rules-based plan and an honest explanation of the fallback.
 
 The server calls a fixed HTTPS provider endpoint, rejects redirects, limits a response to 64 KiB and aborts a request after 12 seconds by default. Its structured response is validated again locally. Provider output has no tool execution, network navigation, file access or booking capability. Prompt instructions help guide prose; schema validation and the absence of tools enforce the application boundary.
 

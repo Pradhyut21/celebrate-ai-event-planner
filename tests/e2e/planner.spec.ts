@@ -1,6 +1,17 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
+async function expectAccessible(page: Page, name: string) {
+  const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  if (result.violations.length) {
+    await test.info().attach(`${name}-accessibility`, { body: JSON.stringify(result.violations, null, 2), contentType: 'application/json' });
+  }
+  expect(result.violations.map((violation) => ({
+    id: violation.id,
+    nodes: violation.nodes.map((node) => ({ target: node.target, summary: node.failureSummary })),
+  }))).toEqual([]);
+}
+
 async function createBirthday(page: Page, name = 'Maya’s garden birthday') {
   await page.getByRole('button', { name: 'New event', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Create an event' });
@@ -29,8 +40,12 @@ test('creates a personal plan and preserves actual spend, task progress, and ven
   await createBirthday(page);
 
   await page.getByRole('button', { name: 'Budget', exact: true }).click();
+  const allocation = page.getByRole('spinbutton', { name: /^Allocation for / }).first();
+  const adjustedAllocation = (Math.round(Number(await allocation.inputValue()) * 100) + 10001) / 100;
+  await allocation.fill(String(adjustedAllocation));
+  await allocation.blur();
   const actualSpend = page.getByRole('spinbutton', { name: /^Actual spend for / }).first();
-  await actualSpend.fill('15000');
+  await actualSpend.fill('15000.25');
   await actualSpend.blur();
   await expect(page.getByText(/over budget|overspend/i).first()).toBeVisible();
 
@@ -47,7 +62,7 @@ test('creates a personal plan and preserves actual spend, task progress, and ven
   await vendorName.fill('Neighbourhood kitchen');
   await vendorName.blur();
   const quote = page.getByRole('spinbutton', { name: /^Quote for / }).first();
-  await quote.fill('2400');
+  await quote.fill('2400.75');
   await quote.blur();
   const vendorStatus = page.getByRole('combobox', { name: /^Status for / }).first();
   await vendorStatus.selectOption('contacted');
@@ -57,13 +72,14 @@ test('creates a personal plan and preserves actual spend, task progress, and ven
   await expect(page.getByRole('heading', { name: 'Maya’s garden birthday', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Vendors', exact: true }).click();
   await expect(page.getByRole('textbox', { name: vendorLabel! })).toHaveValue('Neighbourhood kitchen');
-  await expect(page.getByRole('spinbutton', { name: /^Quote for / }).first()).toHaveValue('2400');
+  await expect(page.getByRole('spinbutton', { name: /^Quote for / }).first()).toHaveValue('2400.75');
   await expect(page.getByRole('combobox', { name: /^Status for / }).first()).toHaveValue('contacted');
   await expect(page.getByRole('checkbox').first()).toBeChecked();
   await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   await expect(page.getByRole('checkbox', { name: taskName!, exact: true })).toBeChecked();
   await page.getByRole('button', { name: 'Budget', exact: true }).click();
-  await expect(page.getByRole('spinbutton', { name: /^Actual spend for / }).first()).toHaveValue('15000');
+  await expect(page.getByRole('spinbutton', { name: /^Allocation for / }).first()).toHaveValue(String(adjustedAllocation));
+  await expect(page.getByRole('spinbutton', { name: /^Actual spend for / }).first()).toHaveValue('15000.25');
 });
 
 test('exports a backup, rejects an invalid import, and restores a valid backup', async ({ page }) => {
@@ -135,13 +151,18 @@ test('corrupted browser storage shows a recovery message and leaves planning usa
   await expect(page.getByRole('heading', { name: 'Recovered workspace', exact: true })).toBeVisible();
 });
 
-test('desktop overview and creation dialog have no WCAG A/AA automated violations', async ({ page }) => {
+test('desktop planning views and dialogs have no WCAG A/AA automated violations', async ({ page }) => {
   await expect(page.getByRole('main')).toBeVisible();
-  const overview = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
-  expect(overview.violations).toEqual([]);
+  await expectAccessible(page, 'desktop-overview');
+  for (const section of ['Budget', 'Timeline', 'Vendors', 'Ideas & inspiration']) {
+    await page.getByRole('button', { name: section, exact: true }).click();
+    await expectAccessible(page, `desktop-${section}`);
+  }
   await page.getByRole('button', { name: 'New event', exact: true }).click();
-  const dialog = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
-  expect(dialog.violations).toEqual([]);
+  await expectAccessible(page, 'creation-dialog');
+  await page.getByRole('button', { name: 'Close dialog', exact: true }).click();
+  await page.getByRole('button', { name: 'Open settings', exact: true }).click();
+  await expectAccessible(page, 'settings-dialog');
 });
 
 test('mobile layout supports keyboard navigation, modal focus, and accessibility checks', async ({ page }) => {
@@ -153,13 +174,22 @@ test('mobile layout supports keyboard navigation, modal focus, and accessibility
   await expect(page.getByRole('main')).toBeFocused();
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.getByRole('button', { name: 'Toggle navigation', exact: true }).click();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('button', { name: 'Toggle navigation', exact: true })).toBeFocused();
+  await page.getByRole('button', { name: 'Toggle navigation', exact: true }).click();
   await page.getByRole('button', { name: 'New event', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Create an event' });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByLabel(/^Event name/)).toBeFocused();
+  await expectAccessible(page, 'mobile-creation-dialog');
   await page.keyboard.press('Escape');
   await expect(dialog).not.toBeVisible();
   await expect(page.getByRole('button', { name: 'Toggle navigation', exact: true })).toBeFocused();
-  const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
-  expect(result.violations).toEqual([]);
+  await expectAccessible(page, 'mobile-overview');
+  for (const section of ['Budget', 'Timeline', 'Vendors', 'Ideas & inspiration']) {
+    await page.getByRole('button', { name: 'Toggle navigation', exact: true }).click();
+    await page.getByRole('button', { name: section, exact: true }).click();
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await expectAccessible(page, `mobile-${section}`);
+  }
 });
