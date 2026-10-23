@@ -2,25 +2,27 @@
 
 Verified on **23 October 2026** using Node.js **22.18.0**, npm **10.2.5**, and Windows. The GitHub Actions workflow repeats installation and checks on Ubuntu with Node 22; its badge links to the current remote result.
 
-| Check | Observed result |
-| --- | --- |
-| `npm run typecheck` | Pass; strict TypeScript with unused-code checks |
-| `npm run lint` | Pass; zero warnings, React hooks and JSX accessibility rules included |
-| `npm run test:coverage` | 87 tests passed across five test files |
-| Coverage | Statements 97.91%; branches 92.34%; functions 97.18%; lines 99.60% |
-| `npm run build` | Pass; Vite browser bundle plus compiled Node server |
-| `npm run test:e2e` | All seven Chromium browser tests passed |
-| Accessibility scans | Zero axe WCAG A/AA violations on the tested five planning views at desktop/mobile widths, desktop Create/Settings dialogs and mobile Create dialog |
-| Keyboard/layout | Skip link, main focus, navigation Escape, dialog focus/return and mobile page overflow checks passed |
-| `npm audit --audit-level=high` | Zero known vulnerabilities reported across installed dependencies |
-| Development startup | `npm run dev`: browser entry and API health both returned HTTP 200 |
-| Production startup | `npm start`: built interface and API exercised by browser suite |
-| `npm run check:size` | Passed; tracked source below 1 MB, one local branch named `main`, generated folders excluded and no recognized secret patterns |
-| GitHub visibility/branches | Anonymous repository API reports public visibility and only `main` |
+| Check                          | Observed result                                                                                                                                    |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run typecheck`            | Pass; strict TypeScript with unused-code checks                                                                                                    |
+| `npm run lint`                 | Pass; zero warnings, React hooks and JSX accessibility rules included                                                                              |
+| `npm run test:coverage`        | 132 tests passed across eight test files                                                                                                           |
+| Coverage                       | Statements 99.37%; branches 95.84%; functions 99.04%; lines 100%                                                                                   |
+| `npm run build`                | Pass; Vite browser bundle plus compiled Node server                                                                                                |
+| `npm run test:e2e`             | All ten Chromium browser tests passed                                                                                                              |
+| Accessibility scans            | Zero axe WCAG A/AA violations on the tested five planning views at desktop/mobile widths, desktop Create/Settings dialogs and mobile Create dialog |
+| Keyboard/layout                | Skip link, main focus, navigation Escape, dialog focus/return and mobile page overflow checks passed                                               |
+| `npm audit --audit-level=high` | Zero known vulnerabilities reported across installed dependencies                                                                                  |
+| Development startup            | `npm run dev`: browser entry and API health both returned HTTP 200                                                                                 |
+| Production startup             | `npm start`: built interface and API exercised by browser suite                                                                                    |
+| `npm run check:size`           | Passed; tracked source below 1 MB, one local branch named `main`, generated folders excluded and no recognized secret patterns                     |
+| GitHub visibility/branches     | Anonymous repository API reports public visibility and only `main`                                                                                 |
 
-Coverage includes shared business logic, HTTP/provider logic and browser data helpers. React views are exercised by browser tests, rather than being included in this unit coverage percentage. Thresholds are enforced in `vitest.config.ts`.
+Coverage includes shared business logic/templates, all server policy/HTTP/provider modules and browser data/service modules. React views and side-effect hooks are exercised by browser tests, rather than included in this unit percentage. Gates now require 99% lines, 97% statements/functions and 90% branches.
 
-The production browser assets are approximately **115.44 kB JavaScript** and **8.15 kB CSS**, gzip compressed. `docs/preview.png` is a genuine application capture, 170,155 bytes. No dependencies, builds, recordings, coverage output or browser binaries are tracked in Git.
+Type-aware lint additionally checks promise handling and type imports, Prettier enforces consistent formatting, and compressed transfer budgets enforce JavaScript below 120,000 bytes and CSS below 10,000 bytes. Browser checks include WCAG 2.2 target size, 320-pixel reflow, invalid-field announcements/focus, mobile route focus and duplicate-submit/busy-state behavior. No runtime dependencies were added in this refactor.
+
+The production browser assets are approximately **116.4 kB JavaScript** and **8.15 kB CSS**, gzip compressed. `docs/preview.png` is a genuine application capture, 170,155 bytes. No dependencies, builds, recordings, coverage output or browser binaries are tracked in Git.
 
 ## Scenarios verified
 

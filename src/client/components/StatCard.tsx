@@ -1,12 +1,12 @@
-import React from "react";
-import { Wallet } from "lucide-react";
+import React from 'react';
+import type { Wallet } from 'lucide-react';
 
 export function StatCard({
   label,
   value,
   detail,
   Icon,
-  tone = "green",
+  tone = 'green',
 }: {
   label: string;
   value: string;

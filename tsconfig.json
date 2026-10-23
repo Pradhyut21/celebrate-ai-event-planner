@@ -13,6 +13,11 @@
     "forceConsistentCasingInFileNames": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
     "types": ["node", "vite/client", "vitest/globals"]
   },
   "include": ["src", "tests", "*.config.ts"],

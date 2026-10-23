@@ -1,13 +1,8 @@
-import React from "react";
+import React from 'react';
 
 export function BotanicalIllustration(): React.ReactElement {
   return (
-    <svg
-      className="hero-art"
-      viewBox="0 0 300 230"
-      fill="none"
-      aria-hidden="true"
-    >
+    <svg className="hero-art" viewBox="0 0 300 230" fill="none" aria-hidden="true">
       <circle cx="161" cy="117" r="91" fill="#e9eddb" />
       <path
         d="M169 197c-5-50 18-91 50-131M173 163c-36-10-54-32-53-65M180 140c28-1 51-19 54-43"

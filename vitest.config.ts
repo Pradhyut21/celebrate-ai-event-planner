@@ -6,10 +6,15 @@ export default defineConfig({
     exclude: ['tests/e2e/**'],
     coverage: {
       provider: 'v8',
-      include: ['src/shared/**/*.ts', 'src/server/app.ts', 'src/server/provider.ts', 'src/client/lib/**/*.ts'],
+      include: [
+        'src/shared/**/*.ts',
+        'src/server/**/*.ts',
+        'src/client/lib/**/*.ts',
+        'src/client/services/**/*.ts',
+      ],
       exclude: ['src/server/index.ts'],
       reporter: ['text', 'html', 'lcov'],
-      thresholds: { lines: 80, statements: 80, functions: 80, branches: 70 },
+      thresholds: { lines: 99, statements: 97, functions: 97, branches: 90 },
     },
   },
 });

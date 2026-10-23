@@ -1,32 +1,30 @@
-import { storedEventSchema } from "../../shared/schema.js";
-import type { Plan, StoredEvent } from "../../shared/schema.js";
+import { storedEventSchema } from '../../shared/schema.js';
+import type { Plan, StoredEvent } from '../../shared/schema.js';
 
-export const STORAGE_KEY = "celebrate-ai.events.v1";
-export const SELECTION_KEY = "celebrate-ai.selected.v1";
+export const STORAGE_KEY = 'celebrate-ai.events.v1';
+export const SELECTION_KEY = 'celebrate-ai.selected.v1';
 export const MAX_EVENTS = 20;
 export const MAX_BACKUP_BYTES = 2_000_000;
 
 /** Validate the whole envelope before replacing any in-memory or persisted data. */
 export function parseBackup(raw: string, allowEmpty = false): StoredEvent[] {
   if (new TextEncoder().encode(raw).byteLength > MAX_BACKUP_BYTES)
-    throw new Error("Choose a JSON backup smaller than 2 MB.");
+    throw new Error('Choose a JSON backup smaller than 2 MB.');
   const decoded: unknown = JSON.parse(raw);
   if (
     !decoded ||
-    typeof decoded !== "object" ||
-    !("version" in decoded) ||
+    typeof decoded !== 'object' ||
+    !('version' in decoded) ||
     decoded.version !== 1 ||
-    !("events" in decoded) ||
+    !('events' in decoded) ||
     !Array.isArray(decoded.events) ||
     decoded.events.length > MAX_EVENTS ||
     (!allowEmpty && decoded.events.length < 1)
   )
-    throw new Error("Choose a version 1 Celebrate AI backup with 1–20 events.");
-  const events = decoded.events.map((value: unknown) =>
-    storedEventSchema.parse(value),
-  );
+    throw new Error('Choose a version 1 Celebrate AI backup with 1–20 events.');
+  const events = decoded.events.map((value: unknown) => storedEventSchema.parse(value));
   if (new Set(events.map((event) => event.id)).size !== events.length)
-    throw new Error("The backup contains duplicate event identifiers.");
+    throw new Error('The backup contains duplicate event identifiers.');
   return events;
 }
 
@@ -48,26 +46,21 @@ export function sumMoney(values: number[]): number {
 
 /** Rebalance other categories atomically, preserving the exact total allocation. */
 export function reallocateBudget(
-  budget: Plan["budget"],
+  budget: Plan['budget'],
   id: string,
   amount: number,
-): Plan["budget"] {
+): Plan['budget'] {
   const target = budget.findIndex((item) => item.id === id);
-  if (target < 0) throw new Error("Budget category not found.");
+  if (target < 0) throw new Error('Budget category not found.');
   const cents = Math.round(amount * 100);
-  const total = budget.reduce(
-    (sum, item) => sum + Math.round(item.allocated * 100),
-    0,
-  );
+  const total = budget.reduce((sum, item) => sum + Math.round(item.allocated * 100), 0);
   if (
     !Number.isFinite(amount) ||
     amount < 0 ||
     cents > total ||
     Math.abs(amount * 100 - cents) > 0.00001
   )
-    throw new Error(
-      "Use up to two decimal places and an allocation within the total budget.",
-    );
+    throw new Error('Use up to two decimal places and an allocation within the total budget.');
   const next = budget.map((item) => ({ ...item }));
   let delta = cents - Math.round(next[target].allocated * 100);
   next[target].allocated = cents / 100;
@@ -76,7 +69,7 @@ export function reallocateBudget(
     .reverse()
     .filter((index) => index !== target);
   if (!others.length && delta !== 0)
-    throw new Error("A single category must equal the total budget.");
+    throw new Error('A single category must equal the total budget.');
   for (const index of others) {
     if (delta === 0) break;
     const available = Math.round(next[index].allocated * 100);
@@ -84,7 +77,6 @@ export function reallocateBudget(
     next[index].allocated = (available - adjustment) / 100;
     delta -= adjustment;
   }
-  if (delta !== 0)
-    throw new Error("There is not enough budget in other categories.");
+  if (delta !== 0) throw new Error('There is not enough budget in other categories.');
   return next;
 }

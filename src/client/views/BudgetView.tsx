@@ -1,10 +1,11 @@
-import React, { useState } from "react";
-import { ArrowDownToLine, ClipboardList, Leaf, Wallet } from "lucide-react";
-import type { Plan, StoredEvent } from "../../shared/schema.js";
-import { csvCell, reallocateBudget, sumMoney } from "../lib/data.js";
-import { money } from "../lib/format.js";
-import { download } from "../lib/download.js";
-import { StatCard } from "../components/StatCard.js";
+import React, { useState } from 'react';
+import { ArrowDownToLine, ClipboardList, Leaf, Wallet } from 'lucide-react';
+import type { Plan, StoredEvent } from '../../shared/schema.js';
+import { MoneySchema } from '../../shared/schema.js';
+import { csvCell, reallocateBudget, sumMoney } from '../lib/data.js';
+import { money } from '../lib/format.js';
+import { download } from '../lib/download.js';
+import { StatCard } from '../components/StatCard.js';
 
 export function BudgetView({
   event,
@@ -15,46 +16,31 @@ export function BudgetView({
 }): React.ReactElement {
   const allocated = sumMoney(event.plan.budget.map((item) => item.allocated));
   const actual = sumMoney(event.plan.budget.map((item) => item.actual));
-  const [editingError, setEditingError] = useState("");
-  const change = (id: string, field: "allocated" | "actual", value: string) => {
+  const [editingError, setEditingError] = useState('');
+  const change = (id: string, field: 'allocated' | 'actual', value: string) => {
     const amount = Number(value);
-    if (
-      !Number.isFinite(amount) ||
-      amount < 0 ||
-      amount > 100000000 ||
-      Math.abs(amount * 100 - Math.round(amount * 100)) > 0.00001
-    ) {
-      setEditingError(
-        "Enter an amount between 0 and 100,000,000 with up to two decimal places.",
-      );
+    if (!MoneySchema.safeParse(amount).success) {
+      setEditingError('Enter an amount between 0 and 100,000,000 with up to two decimal places.');
       return;
     }
-    setEditingError("");
-    try {
-      const budget =
-        field === "allocated"
-          ? reallocateBudget(event.plan.budget, id, amount)
-          : event.plan.budget.map((item) =>
-              item.id === id ? { ...item, actual: amount } : item,
-            );
-      updatePlan((plan) => ({ ...plan, budget }));
-    } catch (error) {
-      setEditingError(
-        error instanceof Error
-          ? error.message
-          : "Could not update this allocation.",
-      );
-    }
+    setEditingError('');
+    updatePlan((plan) => ({
+      ...plan,
+      budget:
+        field === 'allocated'
+          ? reallocateBudget(plan.budget, id, amount)
+          : plan.budget.map((item) => (item.id === id ? { ...item, actual: amount } : item)),
+    }));
   };
   const exportBudget = () =>
     download(
-      "\uFEFF" +
+      '\uFEFF' +
         [
           [
-            "Category",
+            'Category',
             `Allocated (${event.input.currency})`,
             `Actual (${event.input.currency})`,
-            "Remaining",
+            'Remaining',
           ],
           ...event.plan.budget.map((item) => [
             item.category,
@@ -63,10 +49,10 @@ export function BudgetView({
             item.allocated - item.actual,
           ]),
         ]
-          .map((row) => row.map(csvCell).join(","))
-          .join("\r\n"),
-      "celebrate-budget.csv",
-      "text/csv;charset=utf-8",
+          .map((row) => row.map(csvCell).join(','))
+          .join('\r\n'),
+      'celebrate-budget.csv',
+      'text/csv;charset=utf-8',
     );
   return (
     <>
@@ -74,9 +60,7 @@ export function BudgetView({
         <div>
           <p className="eyebrow">A PLAN FOR EVERY PENNY</p>
           <h2>Your celebration budget</h2>
-          <p>
-            Adjust allocations and record spending as your plans come together.
-          </p>
+          <p>Adjust allocations and record spending as your plans come together.</p>
         </div>
         <button className="button secondary" onClick={exportBudget}>
           <ArrowDownToLine size={17} />
@@ -98,25 +82,22 @@ export function BudgetView({
           tone="peach"
         />
         <StatCard
-          label={actual > event.input.budget ? "Over budget" : "Remaining"}
-          value={money(
-            Math.abs(event.input.budget - actual),
-            event.input.currency,
-          )}
+          label={actual > event.input.budget ? 'Over budget' : 'Remaining'}
+          value={money(Math.abs(event.input.budget - actual), event.input.currency)}
           detail={
             actual > event.input.budget
-              ? "Review spending before new bookings"
-              : "Available for your celebration"
+              ? 'Review spending before new bookings'
+              : 'Available for your celebration'
           }
           Icon={Leaf}
-          tone={actual > event.input.budget ? "red" : "green"}
+          tone={actual > event.input.budget ? 'red' : 'green'}
         />
       </div>
       {(allocated > event.input.budget || actual > event.input.budget) && (
         <p role="alert" className="callout warning">
           {actual > event.input.budget
             ? `Actual spending is ${money(actual - event.input.budget, event.input.currency)} over your total budget.`
-            : `Allocations exceed your budget by ${money(allocated - event.input.budget, event.input.currency)}.`}{" "}
+            : `Allocations exceed your budget by ${money(allocated - event.input.budget, event.input.currency)}.`}{' '}
           Reduce a category or edit the event budget.
         </p>
       )}
@@ -133,8 +114,7 @@ export function BudgetView({
         <div className="table-scroll">
           <table>
             <caption className="sr-only">
-              Budget allocations and actual spending by category, in{" "}
-              {event.input.currency}
+              Budget allocations and actual spending by category, in {event.input.currency}
             </caption>
             <thead>
               <tr>
@@ -160,7 +140,7 @@ export function BudgetView({
                       step="0.01"
                       value={item.allocated}
                       onChange={(changeEvent) =>
-                        change(item.id, "allocated", changeEvent.target.value)
+                        change(item.id, 'allocated', changeEvent.target.value)
                       }
                     />
                   </td>
@@ -173,15 +153,11 @@ export function BudgetView({
                       step="0.01"
                       value={item.actual}
                       onChange={(changeEvent) =>
-                        change(item.id, "actual", changeEvent.target.value)
+                        change(item.id, 'actual', changeEvent.target.value)
                       }
                     />
                   </td>
-                  <td
-                    className={
-                      item.actual > item.allocated ? "text-danger" : ""
-                    }
-                  >
+                  <td className={item.actual > item.allocated ? 'text-danger' : ''}>
                     {money(item.allocated - item.actual, event.input.currency)}
                   </td>
                 </tr>
@@ -198,9 +174,9 @@ export function BudgetView({
           </table>
         </div>
         <p className="table-note">
-          Allocation changes are balanced against the other categories, starting
-          with the final category, to keep the total exact. Figures are
-          estimates. Actual spend is separate from vendor quotes.
+          Allocation changes are balanced against the other categories, starting with the final
+          category, to keep the total exact. Figures are estimates. Actual spend is separate from
+          vendor quotes.
         </p>
       </article>
     </>

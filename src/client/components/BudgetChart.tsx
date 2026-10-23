@@ -1,14 +1,14 @@
-import React from "react";
-import type { Plan } from "../../shared/schema.js";
-import { money } from "../lib/format.js";
-import { sumMoney } from "../lib/data.js";
+import React from 'react';
+import type { Plan } from '../../shared/schema.js';
+import { money } from '../lib/format.js';
+import { sumMoney } from '../lib/data.js';
 
 export function BudgetChart({
   budget,
   currency,
   total,
 }: {
-  budget: Plan["budget"];
+  budget: Plan['budget'];
   currency: string;
   total: number;
 }): React.ReactElement {
@@ -16,16 +16,14 @@ export function BudgetChart({
     <div
       className="donut-chart"
       role="img"
-      aria-label={`Budget allocations: ${budget.map((item) => `${item.category} ${money(item.allocated, currency)}`).join(", ")}`}
+      aria-label={`Budget allocations: ${budget.map((item) => `${item.category} ${money(item.allocated, currency)}`).join(', ')}`}
     >
       <svg viewBox="0 0 200 200" aria-hidden="true">
         <circle className="chart-base" cx="100" cy="100" r="80" />
         {budget.map((item, index) => {
           const length = (item.allocated / total) * 100;
           const start =
-            (sumMoney(budget.slice(0, index).map((entry) => entry.allocated)) /
-              total) *
-            100;
+            (sumMoney(budget.slice(0, index).map((entry) => entry.allocated)) / total) * 100;
           return (
             <circle
               key={item.id}

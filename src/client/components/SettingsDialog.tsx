@@ -1,10 +1,10 @@
-import React from "react";
-import { ArrowDownToLine, ShieldCheck, Trash2 } from "lucide-react";
-import type { StoredEvent } from "../../shared/schema.js";
-import type { Notice, Health } from "../types.js";
-import { Dialog } from "./Dialog.js";
-import { download } from "../lib/download.js";
-import { STORAGE_KEY } from "../lib/data.js";
+import React from 'react';
+import { ArrowDownToLine, ShieldCheck, Trash2 } from 'lucide-react';
+import type { StoredEvent } from '../../shared/schema.js';
+import type { Notice, Health } from '../types.js';
+import { Dialog } from './Dialog.js';
+import { download } from '../lib/download.js';
+import { STORAGE_KEY } from '../lib/data.js';
 
 type SettingsProps = {
   current?: StoredEvent;
@@ -40,15 +40,15 @@ export function SettingsDialog({
     <Dialog title="Settings & backups" onClose={onClose}>
       {notice && (
         <div
-          role={notice.kind === "error" ? "alert" : "status"}
+          role={notice.kind === 'error' ? 'alert' : 'status'}
           className={`notice ${notice.kind}`}
         >
           {notice.text}
         </div>
       )}
       <p className="dialog-intro">
-        Your events stay in this browser. Export a backup to keep them safe or
-        move to another device.
+        Your events stay in this browser. Export a backup to keep them safe or move to another
+        device.
       </p>
       <div className="settings-section">
         <h3>
@@ -57,17 +57,16 @@ export function SettingsDialog({
         </h3>
         <p>
           {healthError
-            ? "Server unavailable. Local rules-based planning is available."
+            ? 'Server unavailable. Local rules-based planning is available.'
             : !health
-              ? "Checking the planning service…"
+              ? 'Checking the planning service…'
               : health.aiEnabled
-                ? "AI provider is configured. Event preferences are sent to the server and configured provider when generating a plan."
-                : "Demo mode: useful rules-based planning is available. A server-side AI key enables generative personalization."}
+                ? 'AI provider is configured. Event preferences are sent to the server and configured provider when generating a plan.'
+                : 'Demo mode: useful rules-based planning is available. A server-side AI key enables generative personalization.'}
         </p>
         {health?.tokenRequired && (
           <p className="callout">
-            This server requires an access token to generate a plan through the
-            API.
+            This server requires an access token to generate a plan through the API.
           </p>
         )}
         <label>
@@ -83,30 +82,28 @@ export function SettingsDialog({
           />
         </label>
         <p className="field-hint">
-          Held in memory for this tab only. Never enter your AI provider API key
-          here.
+          Held in memory for this tab only. Never enter your AI provider API key here.
         </p>
       </div>
       {corruptStorageProtected && (
         <div className="callout warning">
           <p>
-            Unreadable saved data has been preserved. Download it before
-            creating, editing, importing, or deleting an event, which replaces
-            the saved workspace.
+            Unreadable saved data has been preserved. Download it before creating, editing,
+            importing, or deleting an event, which replaces the saved workspace.
           </p>
           <button
             className="button secondary"
             onClick={() => {
               try {
                 download(
-                  localStorage.getItem(STORAGE_KEY) ?? "",
-                  "celebrate-recovery.json",
-                  "application/json",
+                  localStorage.getItem(STORAGE_KEY) ?? '',
+                  'celebrate-recovery.json',
+                  'application/json',
                 );
               } catch {
                 setNotice({
-                  text: "Browser storage is unavailable. The recovery file could not be read.",
-                  kind: "error",
+                  text: 'Browser storage is unavailable. The recovery file could not be read.',
+                  kind: 'error',
                 });
               }
             }}
@@ -120,11 +117,7 @@ export function SettingsDialog({
           <ArrowDownToLine size={18} />
           Your data, in your hands
         </h3>
-        <button
-          className="button secondary"
-          onClick={exportEvents}
-          disabled={!eventCount}
-        >
+        <button className="button secondary" onClick={exportEvents} disabled={!eventCount}>
           <ArrowDownToLine size={16} />
           Export all events (JSON)
         </button>
@@ -136,13 +129,13 @@ export function SettingsDialog({
             aria-label="Import events (JSON)"
             onChange={(event) => {
               void importEvents(event.target.files?.[0]);
-              event.target.value = "";
+              event.target.value = '';
             }}
           />
         </label>
         <p className="field-hint">
-          Validated JSON backup, up to 2 MB and 20 events. Matching event
-          identifiers are updated; other events are kept.
+          Validated JSON backup, up to 2 MB and 20 events. Matching event identifiers are updated;
+          other events are kept.
         </p>
       </div>
       {current && (

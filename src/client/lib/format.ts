@@ -1,5 +1,5 @@
 export function localDate(date = new Date()): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 export function futureDate(days: number): string {
   const date = new Date();
@@ -7,15 +7,15 @@ export function futureDate(days: number): string {
   return localDate(date);
 }
 export function formatDate(value: string, short = false): string {
-  return new Date(`${value}T12:00:00`).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: short ? "short" : "long",
-    ...(short ? {} : { year: "numeric" }),
+  return new Date(`${value}T12:00:00`).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: short ? 'short' : 'long',
+    ...(short ? {} : { year: 'numeric' }),
   });
 }
 export function money(amount: number, currency: string): string {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
     currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
@@ -23,7 +23,5 @@ export function money(amount: number, currency: string): string {
 }
 export function remainingDays(date: string): number {
   const today = new Date(`${localDate()}T12:00:00`).getTime();
-  return Math.ceil(
-    (new Date(`${date}T12:00:00`).getTime() - today) / 86_400_000,
-  );
+  return Math.ceil((new Date(`${date}T12:00:00`).getTime() - today) / 86_400_000);
 }

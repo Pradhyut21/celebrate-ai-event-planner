@@ -2,14 +2,21 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
 async function expectAccessible(page: Page, name: string) {
-  const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  const result = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+    .analyze();
   if (result.violations.length) {
-    await test.info().attach(`${name}-accessibility`, { body: JSON.stringify(result.violations, null, 2), contentType: 'application/json' });
+    await test.info().attach(`${name}-accessibility`, {
+      body: JSON.stringify(result.violations, null, 2),
+      contentType: 'application/json',
+    });
   }
-  expect(result.violations.map((violation) => ({
-    id: violation.id,
-    nodes: violation.nodes.map((node) => ({ target: node.target, summary: node.failureSummary })),
-  }))).toEqual([]);
+  expect(
+    result.violations.map((violation) => ({
+      id: violation.id,
+      nodes: violation.nodes.map((node) => ({ target: node.target, summary: node.failureSummary })),
+    })),
+  ).toEqual([]);
 }
 
 async function createBirthday(page: Page, name = 'Maya’s garden birthday') {
@@ -24,8 +31,12 @@ async function createBirthday(page: Page, name = 'Maya’s garden birthday') {
   await dialog.getByLabel(/^Location/).fill('Community garden');
   await dialog.getByLabel(/^Total budget/).fill('12000');
   await dialog.getByLabel(/^Guest count/).fill('24');
-  await dialog.getByLabel('Celebration style', { exact: true }).fill('A colourful, low-waste garden celebration');
-  await dialog.getByLabel('Accessibility needs', { exact: true }).fill('Step-free access and quiet seating');
+  await dialog
+    .getByLabel('Celebration style', { exact: true })
+    .fill('A colourful, low-waste garden celebration');
+  await dialog
+    .getByLabel('Accessibility needs', { exact: true })
+    .fill('Step-free access and quiet seating');
   await dialog.getByLabel('Dietary needs', { exact: true }).fill('Vegetarian; nut allergy');
   await dialog.getByRole('button', { name: 'Generate my plan', exact: true }).click();
   await expect(dialog).not.toBeVisible();
@@ -36,12 +47,54 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/');
 });
 
-test('creates a personal plan and preserves actual spend, task progress, and vendor details after reload', async ({ page }) => {
+test('invalid event details announce errors, focus the first invalid field, and allow correction', async ({
+  page,
+}) => {
+  let planningRequests = 0;
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/api/plan') planningRequests += 1;
+  });
+  await page.getByRole('button', { name: 'New event', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Create an event' });
+  const name = dialog.getByLabel(/^Event name/);
+  const location = dialog.getByLabel(/^Location/);
+  const submit = dialog.getByRole('button', { name: 'Generate my plan', exact: true });
+
+  await submit.click();
+  await expect(name).toBeFocused();
+  await expect(name).toHaveAttribute('aria-invalid', 'true');
+  await expect(dialog.getByRole('alert')).toContainText('Review the highlighted fields');
+
+  // Spaces satisfy native required validation but must fail the shared schema.
+  await name.fill('   ');
+  await location.fill('   ');
+  await submit.click();
+  await expect(name).toBeFocused();
+  await expect(name).toHaveAccessibleDescription('Give your celebration a name.');
+  expect(planningRequests).toBe(0);
+
+  await name.fill('Accessible celebration');
+  await submit.click();
+  await expect(location).toBeFocused();
+  await expect(location).toHaveAccessibleDescription('Enter a location.');
+  await location.fill('Step-free community hall');
+  await submit.click();
+  await expect(dialog).not.toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Accessible celebration', exact: true }),
+  ).toBeVisible();
+  expect(planningRequests).toBe(1);
+});
+
+test('creates a personal plan and preserves actual spend, task progress, and vendor details after reload', async ({
+  page,
+}) => {
   await createBirthday(page);
 
   await page.getByRole('button', { name: 'Budget', exact: true }).click();
   const allocation = page.getByRole('spinbutton', { name: /^Allocation for / }).first();
-  const adjustedAllocation = (Math.round(Number(await allocation.inputValue()) * 100) + 10001) / 100;
+  const adjustedAllocation =
+    (Math.round(Number(await allocation.inputValue()) * 100) + 10001) / 100;
   await allocation.fill(String(adjustedAllocation));
   await allocation.blur();
   const actualSpend = page.getByRole('spinbutton', { name: /^Actual spend for / }).first();
@@ -69,20 +122,34 @@ test('creates a personal plan and preserves actual spend, task progress, and ven
   await page.getByRole('checkbox').first().check();
 
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Maya’s garden birthday', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Maya’s garden birthday', exact: true }),
+  ).toBeVisible();
   await page.getByRole('button', { name: 'Vendors', exact: true }).click();
-  await expect(page.getByRole('textbox', { name: vendorLabel! })).toHaveValue('Neighbourhood kitchen');
-  await expect(page.getByRole('spinbutton', { name: /^Quote for / }).first()).toHaveValue('2400.75');
-  await expect(page.getByRole('combobox', { name: /^Status for / }).first()).toHaveValue('contacted');
+  await expect(page.getByRole('textbox', { name: vendorLabel! })).toHaveValue(
+    'Neighbourhood kitchen',
+  );
+  await expect(page.getByRole('spinbutton', { name: /^Quote for / }).first()).toHaveValue(
+    '2400.75',
+  );
+  await expect(page.getByRole('combobox', { name: /^Status for / }).first()).toHaveValue(
+    'contacted',
+  );
   await expect(page.getByRole('checkbox').first()).toBeChecked();
   await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   await expect(page.getByRole('checkbox', { name: taskName!, exact: true })).toBeChecked();
   await page.getByRole('button', { name: 'Budget', exact: true }).click();
-  await expect(page.getByRole('spinbutton', { name: /^Allocation for / }).first()).toHaveValue(String(adjustedAllocation));
-  await expect(page.getByRole('spinbutton', { name: /^Actual spend for / }).first()).toHaveValue('15000.25');
+  await expect(page.getByRole('spinbutton', { name: /^Allocation for / }).first()).toHaveValue(
+    String(adjustedAllocation),
+  );
+  await expect(page.getByRole('spinbutton', { name: /^Actual spend for / }).first()).toHaveValue(
+    '15000.25',
+  );
 });
 
-test('exports a backup, rejects an invalid import, and restores a valid backup', async ({ page }) => {
+test('exports a backup, rejects an invalid import, and restores a valid backup', async ({
+  page,
+}) => {
   await createBirthday(page, 'Backup celebration');
   await page.getByRole('button', { name: 'Open settings', exact: true }).click();
   const downloadPromise = page.waitForEvent('download');
@@ -100,18 +167,32 @@ test('exports a backup, rejects an invalid import, and restores a valid backup',
   expect(backup.toString('utf8')).toContain('Backup celebration');
 
   const importer = page.getByLabel('Import events (JSON)', { exact: true });
-  await importer.setInputFiles({ name: 'invalid.json', mimeType: 'application/json', buffer: Buffer.from('{"version":1,"events":[{"name":"Invalid"}]}') });
+  await importer.setInputFiles({
+    name: 'invalid.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from('{"version":1,"events":[{"name":"Invalid"}]}'),
+  });
   await expect(page.getByRole('alert')).toContainText(/invalid|could not|failed/i);
   await page.getByRole('button', { name: 'Close dialog', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Backup celebration', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Backup celebration', exact: true }),
+  ).toBeVisible();
 
   await page.getByRole('button', { name: 'Open settings', exact: true }).click();
-  await importer.setInputFiles({ name: 'backup.json', mimeType: 'application/json', buffer: backup });
+  await importer.setInputFiles({
+    name: 'backup.json',
+    mimeType: 'application/json',
+    buffer: backup,
+  });
   await expect(page.getByRole('status')).toContainText(/import/i);
   await page.getByRole('button', { name: 'Close dialog', exact: true }).click();
-  await page.getByLabel('Switch event', { exact: true }).selectOption({ label: 'Backup celebration' });
+  await page
+    .getByLabel('Switch event', { exact: true })
+    .selectOption({ label: 'Backup celebration' });
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Backup celebration', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Backup celebration', exact: true }),
+  ).toBeVisible();
 });
 
 test('event names render as text and never execute as markup', async ({ page }) => {
@@ -128,34 +209,49 @@ test('event names render as text and never execute as markup', async ({ page }) 
   await expect(page.locator('img[onerror]')).toHaveCount(0);
 });
 
-test('an invalid planning response falls back to an honestly labelled local plan', async ({ page }) => {
-  await page.route('**/api/plan', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ plan: { summary: 'Incomplete response' } }),
-  }));
+test('an invalid planning response falls back to an honestly labelled local plan', async ({
+  page,
+}) => {
+  await page.route('**/api/plan', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ plan: { summary: 'Incomplete response' } }),
+    }),
+  );
   await createBirthday(page, 'Resilient celebration');
   await expect(page.getByRole('status')).toContainText(/local rules-based plan/i);
-  await expect(page.getByText('Rules-based plan · no AI provider used', { exact: true })).toBeVisible();
+  await expect(
+    page.getByText('Rules-based plan · no AI provider used', { exact: true }),
+  ).toBeVisible();
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Resilient celebration', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Resilient celebration', exact: true }),
+  ).toBeVisible();
 });
 
-test('corrupted browser storage shows a recovery message and leaves planning usable', async ({ page }) => {
+test('corrupted browser storage shows a recovery message and leaves planning usable', async ({
+  page,
+}) => {
   await page.evaluate(() => localStorage.setItem('celebrate-ai.events.v1', '{broken JSON'));
   await page.reload();
   await expect(page.getByRole('alert')).toContainText(/saved events could not be loaded/i);
   await expect(page.getByText('Sample event · explore freely', { exact: true })).toBeVisible();
   await createBirthday(page, 'Recovered workspace');
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Recovered workspace', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Recovered workspace', exact: true }),
+  ).toBeVisible();
 });
 
-test('desktop planning views and dialogs have no WCAG A/AA automated violations', async ({ page }) => {
+test('desktop planning views and dialogs have no WCAG A/AA automated violations', async ({
+  page,
+}) => {
   await expect(page.getByRole('main')).toBeVisible();
   await expectAccessible(page, 'desktop-overview');
   for (const section of ['Budget', 'Timeline', 'Vendors', 'Ideas & inspiration']) {
     await page.getByRole('button', { name: section, exact: true }).click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
     await expectAccessible(page, `desktop-${section}`);
   }
   await page.getByRole('button', { name: 'New event', exact: true }).click();
@@ -165,14 +261,18 @@ test('desktop planning views and dialogs have no WCAG A/AA automated violations'
   await expectAccessible(page, 'settings-dialog');
 });
 
-test('mobile layout supports keyboard navigation, modal focus, and accessibility checks', async ({ page }) => {
+test('mobile layout supports keyboard navigation, modal focus, and accessibility checks', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: /skip to (main )?content/i })).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('main')).toBeFocused();
-  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
+    .toBe(true);
   await page.getByRole('button', { name: 'Toggle navigation', exact: true }).click();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('button', { name: 'Toggle navigation', exact: true })).toBeFocused();
@@ -189,7 +289,53 @@ test('mobile layout supports keyboard navigation, modal focus, and accessibility
   for (const section of ['Budget', 'Timeline', 'Vendors', 'Ideas & inspiration']) {
     await page.getByRole('button', { name: 'Toggle navigation', exact: true }).click();
     await page.getByRole('button', { name: section, exact: true }).click();
-    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await expect(page.getByRole('main')).toBeFocused();
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
+      .toBe(true);
     await expectAccessible(page, `mobile-${section}`);
   }
+});
+
+test('small-screen views reflow at 320 pixels and retain usable controls', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 740 });
+  await page.reload();
+  for (const section of ['Overview', 'Budget', 'Timeline', 'Vendors', 'Ideas & inspiration']) {
+    await page.getByRole('button', { name: 'Toggle navigation', exact: true }).click();
+    await page.getByRole('button', { name: section, exact: true }).click();
+    await expect(page.getByRole('main')).toBeFocused();
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
+      .toBe(true);
+  }
+});
+
+test('duplicate submissions share one in-flight generation and release the busy state', async ({
+  page,
+}) => {
+  let requests = 0;
+  let release: (() => void) | undefined;
+  const waiting = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route('**/api/plan', async (route) => {
+    requests += 1;
+    await waiting;
+    await route.continue();
+  });
+  await page.getByRole('button', { name: 'New event', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Create an event' });
+  await dialog.getByLabel(/^Event name/).fill('One generation');
+  await dialog.getByLabel(/^Location/).fill('Community hall');
+  await dialog.getByRole('button', { name: 'Generate my plan', exact: true }).click();
+  await expect(
+    dialog.getByRole('button', { name: 'Creating your plan…', exact: true }),
+  ).toBeDisabled();
+  await dialog.locator('form').evaluate((form: HTMLFormElement) => form.requestSubmit());
+  await expect.poll(() => requests).toBe(1);
+  release?.();
+  await expect(dialog).not.toBeVisible();
+  await expect(page.getByRole('heading', { name: 'One generation', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'New event', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Generate my plan', exact: true })).toBeEnabled();
 });

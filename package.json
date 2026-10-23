@@ -18,7 +18,10 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "check:size": "node scripts/check-repository.mjs",
-    "check": "npm run typecheck && npm run lint && npm run test:coverage && npm run build && npm run check:size"
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run test:coverage && npm run build && npm run check:bundle && npm run check:size",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check:bundle": "node scripts/check-bundle.mjs"
   },
   "dependencies": {
     "express": "5.3.0",
@@ -43,6 +46,8 @@
     "eslint": "9.39.5",
     "eslint-plugin-jsx-a11y": "6.10.2",
     "eslint-plugin-react-hooks": "7.1.1",
+    "jsdom": "26.1.0",
+    "prettier": "3.9.10",
     "supertest": "7.3.1",
     "tsx": "4.23.15",
     "typescript": "5.9.3",

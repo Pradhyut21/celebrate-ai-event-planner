@@ -34,15 +34,15 @@ Open **http://127.0.0.1:3001**. The same server serves the compiled interface an
 
 ## What works
 
-| Organizer task | Implemented behavior |
-| --- | --- |
-| Plan different celebrations | Separate wedding, birthday and community templates with relevant milestones, cost categories and supplier checks. |
-| Work within a budget | Priority-weighted allocations, a 10% contingency, exact cent rounding, editable actual spending, remaining funds and overspend indicators. |
-| Meet deadlines | Event-relative milestones, compressed schedules clamped to today, completion tracking and overdue visibility. |
+| Organizer task                | Implemented behavior                                                                                                                                    |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Plan different celebrations   | Separate wedding, birthday and community templates with relevant milestones, cost categories and supplier checks.                                       |
+| Work within a budget          | Priority-weighted allocations, a 10% contingency, exact cent rounding, editable actual spending, remaining funds and overspend indicators.              |
+| Meet deadlines                | Event-relative milestones, compressed schedules clamped to today, completion tracking and overdue visibility.                                           |
 | Compare suppliers responsibly | Editable vendor names, quotes and booking stages plus practical due-diligence checklists. No invented supplier listings or claims of live availability. |
-| Make the plan personal | Style, location, guest count, priorities, dietary needs, access requirements and free-text notes influence rules and optional AI suggestions. |
-| Keep progress | Multiple events, browser persistence, validated JSON backup/restore, budget CSV and printable plans. |
-| Use inclusive controls | Semantic landmarks, labeled inputs, keyboard navigation, native dialogs, visible focus, reduced motion and responsive layouts. |
+| Make the plan personal        | Style, location, guest count, priorities, dietary needs, access requirements and free-text notes influence rules and optional AI suggestions.           |
+| Keep progress                 | Multiple events, browser persistence, validated JSON backup/restore, budget CSV and printable plans.                                                    |
+| Use inclusive controls        | Semantic landmarks, labeled inputs, keyboard navigation, native dialogs, visible focus, reduced motion and responsive layouts.                          |
 
 ## Approach and decision logic
 
@@ -87,9 +87,9 @@ flowchart LR
 ```
 
 ```text
-src/shared/       Validated domain contracts and pure planning rules
-src/server/       HTTP boundary, security controls and AI provider adapter
-src/client/       React interface, persistence and export/import helpers
+src/shared/       Validated contracts, immutable templates and pure planning rules
+src/server/       HTTP composition, security middleware, configuration, resource limits and AI adapter
+src/client/       Views and components, focused hooks, validated HTTP service and pure workspace reducer
 tests/           Domain, API, provider and client regression tests
 tests/e2e/       Real browser workflows and automated accessibility checks
 docs/            Threat model, evaluation evidence and verification record
@@ -98,6 +98,8 @@ scripts/         Submission size, branch and accidental-secret checks
 ```
 
 The server stores no event records. Request and provider output sizes, network time and concurrent generations are bounded. AI rate-limit state has an explicit capacity and expiry; page requests use a separate expiring limiter. Planning costs are linear in the small fixed template size; the browser reuses an event's saved plan without making AI requests for edits to spend or checklists. Production code splits the UI bundle from the server; no browser SDK or heavyweight media is required.
+
+Workspace changes are applied by a pure reducer against the latest state, so queued edits and asynchronous imports preserve other changes. Network requests, browser persistence and mobile focus each have a focused hook. The HTTP service validates unknown responses, rejects redirects and releases request timers and cancellation listeners on completion. Server configuration, security middleware and bounded resource policies are separate from route composition. See [maintenance guidance](docs/MAINTENANCE.md) for extension points and invariants.
 
 ## Verify the submission
 
@@ -109,7 +111,7 @@ npm run test:e2e
 npm audit --audit-level=high
 ```
 
-`npm run check` runs strict TypeScript, lint (including accessibility rules), coverage-gated tests, production build and tracked-repository checks. On a fresh checkout, files are already tracked. If adding files, stage them before the size check. Coverage gates cover shared rules, API/provider logic and client helpers; browser workflows exercise the rendered interface. The verified suite contains **87 unit/integration tests and 7 browser tests**, with **99.60% line coverage** over the covered domain/server/helper modules. Automated accessibility scans supplement keyboard checks and do not establish complete WCAG conformance.
+`npm run check` runs strict TypeScript, type-aware lint (including async safety and accessibility), formatting, coverage-gated tests, production build, compressed-asset budgets and tracked-repository checks. On a fresh checkout, files are already tracked. If adding files, stage them before the size check. Coverage includes shared rules, all server policy/HTTP/provider modules and browser data/service modules; browser workflows exercise the rendered interface and hooks. The verified suite contains **132 unit/integration tests and 10 browser tests**. Exact coverage and browser results are recorded in [verification results](docs/VERIFICATION.md). Automated accessibility scans supplement keyboard checks and do not establish complete WCAG conformance.
 
 GitHub Actions repeats these checks on `main`, saves reports as workflow artifacts and runs CodeQL security analysis. The security workflow also fails when high or critical CodeQL findings remain open after analysis. Actions use pinned commits and limited permissions. No test requires a provider key or paid request. Live paid-provider calls are not part of automated verification.
 

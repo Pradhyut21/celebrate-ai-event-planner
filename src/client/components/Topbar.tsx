@@ -1,7 +1,7 @@
-import React from "react";
-import { Menu, ChevronRight, ShieldCheck, CircleHelp } from "lucide-react";
-import { navigation } from "../navigation.js";
-import type { Section } from "../types.js";
+import React from 'react';
+import { Menu, ChevronRight, ShieldCheck, CircleHelp } from 'lucide-react';
+import { navigation } from '../navigation.js';
+import type { Section } from '../types.js';
 export function Topbar({
   mobileOpen,
   section,
@@ -27,9 +27,7 @@ export function Topbar({
         </button>
         <span className="breadcrumb">
           My celebrations <ChevronRight size={13} />
-          <strong>
-            {navigation.find((item) => item.id === section)?.label}
-          </strong>
+          <strong>{navigation.find((item) => item.id === section)?.label}</strong>
         </span>
       </div>
       <div className="topbar-right">
@@ -37,11 +35,7 @@ export function Topbar({
           <ShieldCheck size={14} />
           Stored in this browser
         </span>
-        <button
-          className="topbar-help"
-          aria-label="Planning help"
-          onClick={onHelp}
-        >
+        <button className="topbar-help" aria-label="Planning help" onClick={onHelp}>
           <CircleHelp size={18} />
         </button>
         <span className="topbar-avatar" aria-hidden="true">

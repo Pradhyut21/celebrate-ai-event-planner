@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import { CheckCheck } from "lucide-react";
-import type { StoredEvent } from "../../shared/schema.js";
-import { TaskRow } from "../components/TaskRow.js";
+import React, { useState } from 'react';
+import { CheckCheck } from 'lucide-react';
+import type { StoredEvent } from '../../shared/schema.js';
+import { TaskRow } from '../components/TaskRow.js';
 
 export function TimelineView({
   event,
@@ -10,11 +10,9 @@ export function TimelineView({
   event: StoredEvent;
   toggleTask: (id: string) => void;
 }): React.ReactElement {
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState('all');
   const tasks = event.plan.tasks.filter(
-    (task) =>
-      filter === "all" ||
-      (filter === "done" ? task.completed : !task.completed),
+    (task) => filter === 'all' || (filter === 'done' ? task.completed : !task.completed),
   );
   const completed = event.plan.tasks.filter((task) => task.completed).length;
   return (
@@ -54,23 +52,17 @@ export function TimelineView({
         {tasks.length ? (
           <div className="task-list">
             {tasks.map((task) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                onChange={() => toggleTask(task.id)}
-              />
+              <TaskRow key={task.id} task={task} onChange={() => toggleTask(task.id)} />
             ))}
           </div>
         ) : (
           <div className="empty-inline">
             <CheckCheck size={30} />
-            <h3>
-              {filter === "open" ? "All caught up!" : "No tasks here yet"}
-            </h3>
+            <h3>{filter === 'open' ? 'All caught up!' : 'No tasks here yet'}</h3>
             <p>
-              {filter === "open"
-                ? "Take a breath and enjoy the anticipation."
-                : "Completed tasks will appear here as you make progress."}
+              {filter === 'open'
+                ? 'Take a breath and enjoy the anticipation.'
+                : 'Completed tasks will appear here as you make progress.'}
             </p>
           </div>
         )}

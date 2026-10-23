@@ -1,5 +1,5 @@
-import React, { useEffect, useId, useRef } from "react";
-import { X } from "lucide-react";
+import React, { useEffect, useId, useRef } from 'react';
+import { X } from 'lucide-react';
 
 export function Dialog({
   title,
@@ -17,28 +17,25 @@ export function Dialog({
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
-    const opener =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     dialog.showModal();
-    dialog.querySelector<HTMLElement>("[data-initial-focus]")?.focus();
+    dialog.querySelector<HTMLElement>('[data-initial-focus]')?.focus();
     return () => {
       dialog.close();
       if (
         opener &&
-        getComputedStyle(opener).visibility !== "hidden" &&
+        getComputedStyle(opener).visibility !== 'hidden' &&
         opener.getClientRects().length
       )
         opener.focus();
-      else document.getElementById("mobile-nav-toggle")?.focus();
+      else document.getElementById('mobile-nav-toggle')?.focus();
     };
   }, []);
   return (
     <dialog
       ref={ref}
       aria-labelledby={titleId}
-      className={wide ? "dialog dialog-wide" : "dialog"}
+      className={wide ? 'dialog dialog-wide' : 'dialog'}
       onCancel={(event) => {
         event.preventDefault();
         onClose();
@@ -49,11 +46,7 @@ export function Dialog({
           <p className="eyebrow">MAKE ROOM FOR JOY</p>
           <h2 id={titleId}>{title}</h2>
         </div>
-        <button
-          className="icon-button"
-          aria-label="Close dialog"
-          onClick={onClose}
-        >
+        <button className="icon-button" aria-label="Close dialog" onClick={onClose}>
           <X size={21} />
         </button>
       </div>

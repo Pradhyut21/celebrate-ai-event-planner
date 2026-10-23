@@ -1,15 +1,8 @@
-import React from "react";
-import {
-  ChevronDown,
-  CircleHelp,
-  Flower2,
-  Heart,
-  Plus,
-  Settings2,
-} from "lucide-react";
-import type { StoredEvent } from "../../shared/schema.js";
-import type { Section } from "../types.js";
-import { navigation } from "../navigation.js";
+import React from 'react';
+import { ChevronDown, CircleHelp, Flower2, Heart, Plus, Settings2 } from 'lucide-react';
+import type { StoredEvent } from '../../shared/schema.js';
+import type { Section } from '../types.js';
+import { navigation } from '../navigation.js';
 type SidebarProps = {
   sidebarRef: React.RefObject<HTMLElement | null>;
   mobileOpen: boolean;
@@ -37,14 +30,10 @@ export function Sidebar({
   return (
     <aside
       ref={sidebarRef}
-      className={`sidebar ${mobileOpen ? "mobile-open" : ""}`}
+      className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`}
       aria-label="Event workspace"
     >
-      <a
-        className="brand"
-        href="#main-content"
-        onClick={() => navigate("overview")}
-      >
+      <a className="brand" href="#main-content" onClick={() => navigate('overview')}>
         <span className="brand-mark">✳</span>
         <span>
           celebrate<span className="brand-ai">AI</span>
@@ -58,11 +47,11 @@ export function Sidebar({
         </label>
         <select
           id="event-switch"
-          value={current?.id ?? ""}
+          value={current?.id ?? ''}
           onChange={(changeEvent) => onSelectEvent(changeEvent.target.value)}
         >
           <option value="" disabled>
-            {events.length ? "Choose an event" : "No events yet"}
+            {events.length ? 'Choose an event' : 'No events yet'}
           </option>
           {events.map((event) => (
             <option value={event.id} key={event.id}>
@@ -72,7 +61,7 @@ export function Sidebar({
         </select>
         <ChevronDown size={15} aria-hidden="true" />
       </div>
-      {current?.id === "sample-celebration" && (
+      {current?.id === 'sample-celebration' && (
         <span className="sample-label">Sample event · explore freely</span>
       )}
       <nav aria-label="Main navigation">
@@ -80,8 +69,8 @@ export function Sidebar({
         {navigation.map(({ id, label, Icon }) => (
           <button
             key={id}
-            aria-current={section === id ? "page" : undefined}
-            className={`nav-item ${section === id ? "active" : ""}`}
+            aria-current={section === id ? 'page' : undefined}
+            className={`nav-item ${section === id ? 'active' : ''}`}
             onClick={() => navigate(id)}
           >
             <Icon size={19} strokeWidth={1.7} />

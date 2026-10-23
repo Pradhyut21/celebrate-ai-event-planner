@@ -1,6 +1,7 @@
-import React, { useState } from "react";
-import { Store } from "lucide-react";
-import type { Plan, StoredEvent } from "../../shared/schema.js";
+import React, { useState } from 'react';
+import { Store } from 'lucide-react';
+import type { Plan, StoredEvent } from '../../shared/schema.js';
+import { MoneySchema } from '../../shared/schema.js';
 
 export function VendorsView({
   event,
@@ -9,11 +10,8 @@ export function VendorsView({
   event: StoredEvent;
   updatePlan: (update: (plan: Plan) => Plan) => void;
 }): React.ReactElement {
-  const [vendorError, setVendorError] = useState("");
-  const updateVendor = (
-    id: string,
-    changes: Partial<Plan["vendors"][number]>,
-  ) =>
+  const [vendorError, setVendorError] = useState('');
+  const updateVendor = (id: string, changes: Partial<Plan['vendors'][number]>) =>
     updatePlan((plan) => ({
       ...plan,
       vendors: plan.vendors.map((vendor) =>
@@ -26,17 +24,10 @@ export function VendorsView({
         <div>
           <p className="eyebrow">GOOD PEOPLE, GREAT CELEBRATIONS</p>
           <h2>Your vendor notebook</h2>
-          <p>
-            Keep conversations, quotes, and the important questions in one
-            place.
-          </p>
+          <p>Keep conversations, quotes, and the important questions in one place.</p>
         </div>
         <span className="badge">
-          {
-            event.plan.vendors.filter((vendor) => vendor.status === "booked")
-              .length
-          }{" "}
-          booked
+          {event.plan.vendors.filter((vendor) => vendor.status === 'booked').length} booked
         </span>
       </div>
       {vendorError && (
@@ -45,9 +36,8 @@ export function VendorsView({
         </p>
       )}
       <p className="callout">
-        These are categories to research, not verified vendor recommendations.
-        Confirm availability, contracts, accessibility, and final prices
-        directly.
+        These are categories to research, not verified vendor recommendations. Confirm availability,
+        contracts, accessibility, and final prices directly.
       </p>
       <div className="vendor-grid">
         {event.plan.vendors.map((vendor) => (
@@ -80,17 +70,12 @@ export function VendorsView({
                   value={vendor.quote}
                   onChange={(changeEvent) => {
                     const quote = Number(changeEvent.target.value);
-                    if (
-                      Number.isFinite(quote) &&
-                      quote >= 0 &&
-                      quote <= 100000000 &&
-                      Math.abs(quote * 100 - Math.round(quote * 100)) < 0.00001
-                    ) {
-                      setVendorError("");
+                    if (MoneySchema.safeParse(quote).success) {
+                      setVendorError('');
                       updateVendor(vendor.id, { quote });
                     } else
                       setVendorError(
-                        "Enter a quote between 0 and 100,000,000 with up to two decimal places.",
+                        'Enter a quote between 0 and 100,000,000 with up to two decimal places.',
                       );
                   }}
                 />
@@ -102,8 +87,7 @@ export function VendorsView({
                   value={vendor.status}
                   onChange={(changeEvent) =>
                     updateVendor(vendor.id, {
-                      status: changeEvent.target
-                        .value as Plan["vendors"][number]["status"],
+                      status: changeEvent.target.value as Plan['vendors'][number]['status'],
                     })
                   }
                 >
@@ -126,9 +110,7 @@ export function VendorsView({
                         updateVendor(vendor.id, {
                           completedChecklist: changeEvent.target.checked
                             ? [...vendor.completedChecklist, item]
-                            : vendor.completedChecklist.filter(
-                                (entry) => entry !== item,
-                              ),
+                            : vendor.completedChecklist.filter((entry) => entry !== item),
                         })
                       }
                     />

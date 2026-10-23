@@ -1,23 +1,23 @@
-import React, { useState } from "react";
-import { LoaderCircle, Sparkles } from "lucide-react";
-import type { EventInput, StoredEvent } from "../../shared/schema.js";
-import { eventInputSchema } from "../../shared/schema.js";
-import { futureDate, localDate } from "../lib/format.js";
-import { Dialog } from "./Dialog.js";
+import React, { useState } from 'react';
+import { LoaderCircle, Sparkles } from 'lucide-react';
+import type { EventInput, StoredEvent } from '../../shared/schema.js';
+import { eventInputSchema } from '../../shared/schema.js';
+import { futureDate, localDate } from '../lib/format.js';
+import { Dialog } from './Dialog.js';
 
 const blankInput = (): EventInput => ({
-  name: "",
-  type: "wedding",
+  name: '',
+  type: 'wedding',
   date: futureDate(90),
-  location: "",
+  location: '',
   budget: 100000,
-  currency: "INR",
+  currency: 'INR',
   guests: 50,
-  vibe: "Warm & intimate",
+  vibe: 'Warm & intimate',
   priorities: [],
-  dietary: "",
-  accessibility: "",
-  notes: "",
+  dietary: '',
+  accessibility: '',
+  notes: '',
 });
 
 export function EventForm({
@@ -35,11 +35,11 @@ export function EventForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const change = <K extends keyof EventInput>(key: K, value: EventInput[K]) => {
     setInput((previous) => ({ ...previous, [key]: value }));
-    setErrors((previous) => ({ ...previous, [key]: "" }));
+    setErrors((previous) => ({ ...previous, [key]: '' }));
   };
   const field = (key: keyof EventInput) => ({
-    "aria-invalid": Boolean(errors[key]),
-    "aria-describedby": errors[key] ? `error-${key}` : undefined,
+    'aria-invalid': Boolean(errors[key]),
+    'aria-describedby': errors[key] ? `error-${key}` : undefined,
   });
   const error = (key: keyof EventInput) =>
     errors[key] ? (
@@ -56,24 +56,26 @@ export function EventForm({
         next[String(issue.path[0])] = issue.message;
       });
       setErrors(next);
+      const form = event.currentTarget;
+      const firstInvalidField = String(result.error.issues[0]?.path[0] ?? '');
+      // Wait for error descriptions to render before moving keyboard focus.
+      window.requestAnimationFrame(() => {
+        const control = form.elements.namedItem(firstInvalidField);
+        if (control instanceof HTMLElement && control.isConnected) control.focus();
+      });
       return;
     }
     onSubmit(result.data);
   };
   return (
-    <Dialog
-      title={event ? "Edit your event" : "Create an event"}
-      onClose={onClose}
-      wide
-    >
+    <Dialog title={event ? 'Edit your event' : 'Create an event'} onClose={onClose} wide>
       <p className="dialog-intro">
-        Tell us a little about your celebration. We’ll bring the details
-        together.
+        Tell us a little about your celebration. We’ll bring the details together.
       </p>
       {event && (
         <p className="callout">
-          Generating again refreshes this event’s budget, tasks, and vendor
-          details. Export a backup first if you want to keep your current plan.
+          Generating again refreshes this event’s budget, tasks, and vendor details. Export a backup
+          first if you want to keep your current plan.
         </p>
       )}
       <form
@@ -87,6 +89,11 @@ export function EventForm({
             }));
         }}
       >
+        {Object.values(errors).some(Boolean) && (
+          <p role="alert" className="callout warning">
+            Review the highlighted fields before creating your plan.
+          </p>
+        )}
         <fieldset disabled={busy} className="form-fields">
           <div className="form-grid">
             <label className="span-two">
@@ -97,20 +104,18 @@ export function EventForm({
                 required
                 maxLength={100}
                 value={input.name}
-                onChange={(event) => change("name", event.target.value)}
+                onChange={(event) => change('name', event.target.value)}
                 placeholder="e.g. Meera’s milestone birthday"
-                {...field("name")}
+                {...field('name')}
               />
-              {error("name")}
+              {error('name')}
             </label>
             <label>
               Event type
               <select
                 name="type"
                 value={input.type}
-                onChange={(event) =>
-                  change("type", event.target.value as EventInput["type"])
-                }
+                onChange={(event) => change('type', event.target.value as EventInput['type'])}
               >
                 <option value="wedding">Wedding</option>
                 <option value="birthday">Birthday</option>
@@ -125,10 +130,10 @@ export function EventForm({
                 required
                 min={localDate()}
                 value={input.date}
-                onChange={(event) => change("date", event.target.value)}
-                {...field("date")}
+                onChange={(event) => change('date', event.target.value)}
+                {...field('date')}
               />
-              {error("date")}
+              {error('date')}
             </label>
             <label className="span-two">
               Location <span aria-hidden="true">*</span>
@@ -137,11 +142,11 @@ export function EventForm({
                 required
                 maxLength={120}
                 value={input.location}
-                onChange={(event) => change("location", event.target.value)}
+                onChange={(event) => change('location', event.target.value)}
                 placeholder="City or venue"
-                {...field("location")}
+                {...field('location')}
               />
-              {error("location")}
+              {error('location')}
             </label>
             <label>
               Total budget <span aria-hidden="true">*</span>
@@ -152,13 +157,11 @@ export function EventForm({
                 min="0.01"
                 max="100000000"
                 step="0.01"
-                value={input.budget || ""}
-                onChange={(event) =>
-                  change("budget", Number(event.target.value))
-                }
-                {...field("budget")}
+                value={input.budget || ''}
+                onChange={(event) => change('budget', Number(event.target.value))}
+                {...field('budget')}
               />
-              {error("budget")}
+              {error('budget')}
             </label>
             <label>
               Currency
@@ -166,10 +169,7 @@ export function EventForm({
                 name="currency"
                 value={input.currency}
                 onChange={(event) =>
-                  change(
-                    "currency",
-                    event.target.value as EventInput["currency"],
-                  )
+                  change('currency', event.target.value as EventInput['currency'])
                 }
               >
                 <option value="INR">INR · Indian rupee</option>
@@ -187,13 +187,11 @@ export function EventForm({
                 min="1"
                 max="10000"
                 step="1"
-                value={input.guests || ""}
-                onChange={(event) =>
-                  change("guests", Number(event.target.value))
-                }
-                {...field("guests")}
+                value={input.guests || ''}
+                onChange={(event) => change('guests', Number(event.target.value))}
+                {...field('guests')}
               />
-              {error("guests")}
+              {error('guests')}
             </label>
             <label>
               Celebration style
@@ -201,11 +199,11 @@ export function EventForm({
                 name="vibe"
                 maxLength={100}
                 value={input.vibe}
-                onChange={(event) => change("vibe", event.target.value)}
+                onChange={(event) => change('vibe', event.target.value)}
                 placeholder="e.g. Colorful, relaxed, outdoors"
-                {...field("vibe")}
+                {...field('vibe')}
               />
-              {error("vibe")}
+              {error('vibe')}
             </label>
             <fieldset className="priority-fieldset span-two">
               <legend>
@@ -213,32 +211,29 @@ export function EventForm({
               </legend>
               <div className="priority-options">
                 {[
-                  "Food & drinks",
-                  "Venue",
-                  "Photography",
-                  "Decor & flowers",
-                  "Entertainment",
-                  "Guest experience",
+                  'Food & drinks',
+                  'Venue',
+                  'Photography',
+                  'Decor & flowers',
+                  'Entertainment',
+                  'Guest experience',
                 ].map((priority) => (
                   <label
-                    className={`choice-chip ${input.priorities.includes(priority) ? "selected" : ""}`}
+                    className={`choice-chip ${input.priorities.includes(priority) ? 'selected' : ''}`}
                     key={priority}
                   >
                     <input
                       type="checkbox"
                       checked={input.priorities.includes(priority)}
                       disabled={
-                        !input.priorities.includes(priority) &&
-                        input.priorities.length >= 3
+                        !input.priorities.includes(priority) && input.priorities.length >= 3
                       }
                       onChange={(event) =>
                         change(
-                          "priorities",
+                          'priorities',
                           event.target.checked
                             ? [...input.priorities, priority]
-                            : input.priorities.filter(
-                                (item) => item !== priority,
-                              ),
+                            : input.priorities.filter((item) => item !== priority),
                         )
                       }
                     />
@@ -246,7 +241,7 @@ export function EventForm({
                   </label>
                 ))}
               </div>
-              {error("priorities")}
+              {error('priorities')}
             </fieldset>
             <label>
               Accessibility needs
@@ -255,13 +250,11 @@ export function EventForm({
                 rows={2}
                 maxLength={500}
                 value={input.accessibility}
-                onChange={(event) =>
-                  change("accessibility", event.target.value)
-                }
+                onChange={(event) => change('accessibility', event.target.value)}
                 placeholder="Step-free routes, quiet space, captions…"
-                {...field("accessibility")}
+                {...field('accessibility')}
               />
-              {error("accessibility")}
+              {error('accessibility')}
             </label>
             <label>
               Dietary needs
@@ -270,11 +263,11 @@ export function EventForm({
                 rows={2}
                 maxLength={500}
                 value={input.dietary}
-                onChange={(event) => change("dietary", event.target.value)}
+                onChange={(event) => change('dietary', event.target.value)}
                 placeholder="Allergies, vegetarian, halal…"
-                {...field("dietary")}
+                {...field('dietary')}
               />
-              {error("dietary")}
+              {error('dietary')}
             </label>
             <label className="span-two">
               Additional notes
@@ -283,33 +276,28 @@ export function EventForm({
                 rows={3}
                 maxLength={1000}
                 value={input.notes}
-                onChange={(event) => change("notes", event.target.value)}
+                onChange={(event) => change('notes', event.target.value)}
                 placeholder="Traditions, favorite things, or anything we should know."
-                {...field("notes")}
+                {...field('notes')}
               />
-              {error("notes")}
+              {error('notes')}
               <span className="field-hint">
-                Avoid private guest details. When AI is enabled, these planning
-                preferences are sent to the configured AI provider.
+                Avoid private guest details. When AI is enabled, these planning preferences are sent
+                to the configured AI provider.
               </span>
             </label>
           </div>
           <div className="dialog-footer">
             <span className="field-hint">* Required fields</span>
             <button className="button primary" type="submit">
-              {busy ? (
-                <LoaderCircle className="spin" size={17} />
-              ) : (
-                <Sparkles size={17} />
-              )}
-              {busy ? "Creating your plan…" : "Generate my plan"}
+              {busy ? <LoaderCircle className="spin" size={17} /> : <Sparkles size={17} />}
+              {busy ? 'Creating your plan…' : 'Generate my plan'}
             </button>
           </div>
         </fieldset>
         {busy && (
           <p role="status" className="generation-status">
-            Gathering your priorities, balancing the budget, and building your
-            timeline…
+            Gathering your priorities, balancing the budget, and building your timeline…
           </p>
         )}
       </form>

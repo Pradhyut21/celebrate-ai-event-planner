@@ -47,17 +47,19 @@ The server calls a fixed HTTPS provider endpoint, rejects redirects, limits a re
 
 ## Server controls
 
-| Threat | Implemented boundary | Evidence |
-| --- | --- | --- |
-| Malformed or oversized requests | Strict JSON, 16 KiB body cap, no compressed bodies, shared schema validation | `src/server/app.ts`, server request tests |
-| Cross-origin browser use | Explicit Origin allowlist; no permissive CORS middleware; JSON media type required | `src/server/app.ts` |
-| Unauthorized paid API use | Optional bearer token; at least 16 characters; required at startup for production with a provider key; hash-based constant-time comparison | `src/server/app.ts` |
-| Resource exhaustion | Per-address 20 requests/minute by default; expiring map capped at 1,000 entries; at most four concurrent planning jobs | `src/server/app.ts` |
-| Static page and asset flooding | Separate 300 requests/minute per address using express-rate-limit; expiring process-local memory store; health/API routes remain separate | `src/server/app.ts`, static-route regression test |
-| Secret or error disclosure | Provider key remains server-side; client errors omit stack traces/provider response bodies; requests and event bodies are not logged | `src/server/app.ts`, `src/server/provider.ts` |
-| Injected active content or embedding | Same-origin CSP with no inline scripts or objects, frame denial, no-sniff content types, restricted browser capabilities | `src/server/app.ts`, browser text-rendering test |
+| Threat                               | Implemented boundary                                                                                                                       | Evidence                                          |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------- |
+| Malformed or oversized requests      | Strict JSON, 16 KiB body cap, no compressed bodies, shared schema validation                                                               | `src/server/app.ts`, server request tests         |
+| Cross-origin browser use             | Explicit Origin allowlist; no permissive CORS middleware; JSON media type required                                                         | `src/server/app.ts`                               |
+| Unauthorized paid API use            | Optional bearer token; at least 16 characters; required at startup for production with a provider key; hash-based constant-time comparison | `src/server/app.ts`                               |
+| Resource exhaustion                  | Per-address 20 requests/minute by default; expiring map capped at 1,000 entries; at most four concurrent planning jobs                     | `src/server/app.ts`                               |
+| Static page and asset flooding       | Separate 300 requests/minute per address using express-rate-limit; expiring process-local memory store; health/API routes remain separate  | `src/server/app.ts`, static-route regression test |
+| Secret or error disclosure           | Provider key remains server-side; client errors omit stack traces/provider response bodies; requests and event bodies are not logged       | `src/server/app.ts`, `src/server/provider.ts`     |
+| Injected active content or embedding | Same-origin CSP with no inline scripts or objects, frame denial, no-sniff content types, restricted browser capabilities                   | `src/server/app.ts`, browser text-rendering test  |
 
 The Origin allowlist is a browser request boundary, not authentication. Requests without an Origin header are possible outside a browser, so the bearer-token and deployment boundaries remain necessary for a network-accessible AI endpoint. Forwarded client-IP headers are not trusted.
+
+`src/server/config.ts` rejects wildcard/malformed origins, credentials or paths in origin strings, non-HTTPS production origins outside loopback, and invalid numeric resource settings. This prevents accidental configuration from silently disabling protections. Browser API requests reject redirects and use safe, typed error messages instead of displaying response bodies. `src/client/services/planning.ts` handles deadlines and cancellation, and reducer actions preserve the latest workspace when edits/imports are queued.
 
 ## Deployment boundary and remaining limits
 

@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   ArrowRight,
   ArrowUpRight,
@@ -13,15 +13,15 @@ import {
   Store,
   Users,
   Wallet,
-} from "lucide-react";
-import type { StoredEvent } from "../../shared/schema.js";
-import type { Section } from "../types.js";
-import { formatDate, money, remainingDays } from "../lib/format.js";
-import { sumMoney } from "../lib/data.js";
-import { BotanicalIllustration } from "../components/BotanicalIllustration.js";
-import { StatCard } from "../components/StatCard.js";
-import { TaskRow } from "../components/TaskRow.js";
-import { BudgetChart } from "../components/BudgetChart.js";
+} from 'lucide-react';
+import type { StoredEvent } from '../../shared/schema.js';
+import type { Section } from '../types.js';
+import { formatDate, money, remainingDays } from '../lib/format.js';
+import { sumMoney } from '../lib/data.js';
+import { BotanicalIllustration } from '../components/BotanicalIllustration.js';
+import { StatCard } from '../components/StatCard.js';
+import { TaskRow } from '../components/TaskRow.js';
+import { BudgetChart } from '../components/BudgetChart.js';
 
 export function Overview({
   event,
@@ -41,36 +41,31 @@ export function Overview({
     ...event.plan.tasks.filter((task) => !task.completed),
     ...event.plan.tasks.filter((task) => task.completed),
   ].slice(0, 3);
-  const booked = event.plan.vendors.filter(
-    (vendor) => vendor.status === "booked",
-  ).length;
+  const booked = event.plan.vendors.filter((vendor) => vendor.status === 'booked').length;
   const days = remainingDays(event.input.date);
   return (
     <>
       <section className="welcome">
         <div>
           <p className="eyebrow">
-            <span className="tiny-flower">✳</span> LESS STRESS. MORE
-            CELEBRATING.
+            <span className="tiny-flower">✳</span> LESS STRESS. MORE CELEBRATING.
           </p>
           <h1>Celebrate beautifully.</h1>
           <p>Big moments start with a little thoughtful planning.</p>
         </div>
         <span className="today-date">
-          {new Date().toLocaleDateString("en-GB", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
+          {new Date().toLocaleDateString('en-GB', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
           })}
         </span>
       </section>
       <article className="event-hero">
         <div className="event-hero-content">
           <span className="badge paper">
-            YOUR{" "}
-            {event.input.type === "community"
-              ? "COMMUNITY EVENT"
-              : event.input.type.toUpperCase()}
+            YOUR{' '}
+            {event.input.type === 'community' ? 'COMMUNITY EVENT' : event.input.type.toUpperCase()}
           </span>
           <h2>{event.input.name}</h2>
           <div className="event-meta">
@@ -93,8 +88,8 @@ export function Overview({
               {days > 0
                 ? `${days} days to make it wonderful`
                 : days === 0
-                  ? "Today is your day. Enjoy every moment."
-                  : "Your celebration memories start here"}
+                  ? 'Today is your day. Enjoy every moment.'
+                  : 'Your celebration memories start here'}
             </span>
             <button className="text-button" onClick={onEdit}>
               Edit event <Pencil size={13} />
@@ -109,14 +104,9 @@ export function Overview({
           value={money(event.input.budget, event.input.currency)}
           detail={
             <>
-              <span
-                className={actual > event.input.budget ? "text-danger" : ""}
-              >
-                {money(
-                  Math.abs(event.input.budget - actual),
-                  event.input.currency,
-                )}{" "}
-                {actual > event.input.budget ? "over budget" : "remaining"}
+              <span className={actual > event.input.budget ? 'text-danger' : ''}>
+                {money(Math.abs(event.input.budget - actual), event.input.currency)}{' '}
+                {actual > event.input.budget ? 'over budget' : 'remaining'}
               </span>
             </>
           }
@@ -151,8 +141,8 @@ export function Overview({
           value={`${booked} / ${event.plan.vendors.length}`}
           detail={
             booked === event.plan.vendors.length
-              ? "Your team is coming together"
-              : "Find your perfect celebration team"
+              ? 'Your team is coming together'
+              : 'Find your perfect celebration team'
           }
           Icon={Store}
           tone="yellow"
@@ -165,29 +155,21 @@ export function Overview({
               <h3>A little progress, every day</h3>
               <p>Let’s take care of what’s next.</p>
             </div>
-            <button
-              className="text-button"
-              onClick={() => setSection("timeline")}
-            >
+            <button className="text-button" onClick={() => setSection('timeline')}>
               View timeline <ArrowUpRight size={14} />
             </button>
           </div>
           <div className="task-list">
             {nextTasks.map((task) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                onChange={() => toggleTask(task.id)}
-                compact
-              />
+              <TaskRow key={task.id} task={task} onChange={() => toggleTask(task.id)} compact />
             ))}
           </div>
           <div className="card-footer">
             <span>
               <span className="status-dot" />
               {completed === event.plan.tasks.length
-                ? "Everything is checked off. You did it!"
-                : "Small steps. A celebration to remember."}
+                ? 'Everything is checked off. You did it!'
+                : 'Small steps. A celebration to remember.'}
             </span>
             <Heart size={15} />
           </div>
@@ -211,17 +193,12 @@ export function Overview({
                 <li key={item.id}>
                   <span className={`category-dot dot-${index}`} />
                   <span>{item.category}</span>
-                  <strong>
-                    {Math.round((item.allocated / event.input.budget) * 100)}%
-                  </strong>
+                  <strong>{Math.round((item.allocated / event.input.budget) * 100)}%</strong>
                 </li>
               ))}
             </ul>
           </div>
-          <button
-            className="full-width-link"
-            onClick={() => setSection("budget")}
-          >
+          <button className="full-width-link" onClick={() => setSection('budget')}>
             Manage budget <ArrowRight size={15} />
           </button>
         </article>
@@ -231,7 +208,7 @@ export function Overview({
           <p className="eyebrow">A FEW THOUGHTFUL TOUCHES</p>
           <h2>Make it feel like you.</h2>
         </div>
-        <button className="text-button" onClick={() => setSection("ideas")}>
+        <button className="text-button" onClick={() => setSection('ideas')}>
           Explore ideas <ArrowUpRight size={14} />
         </button>
       </div>
@@ -240,7 +217,7 @@ export function Overview({
           <button
             className={`inspiration-tile inspiration-${index}`}
             key={idea.id}
-            onClick={() => setSection("ideas")}
+            onClick={() => setSection('ideas')}
           >
             <span className="idea-icon">
               {index === 0 ? (
